@@ -30,7 +30,7 @@ class WaveManager:
         self.wave        = 0
         self.boss_active = False
         self.boss        = None
-        self.speed_mult  = 1.0 + (sector - 1) * 0.24
+        self.speed_mult  = 1.0 + (sector - 1) * 0.14
         self.start_next_wave()
 
     def start_boss_rush(self):
@@ -92,6 +92,9 @@ class WaveManager:
             tier = self._enemy_sector()
             self.speed_mult = 1.0 + (tier - 1) * 0.18 + (self.wave - 1) * 0.025
             self.spawn_rate = max(18, 92 - tier * 7 - self.wave * 3)
+        elif self.mode == 'campaign':
+            self.speed_mult = 1.0 + (self.sector - 1) * 0.14
+            self.spawn_rate = max(36, 104 - self.sector * 5 - self.wave * 4)
         else:
             self.speed_mult = 1.0 + (self.sector - 1) * 0.24
             self.spawn_rate = max(20, 92 - self.sector * 8 - self.wave * 5)
@@ -164,6 +167,14 @@ class WaveManager:
             return
         BossClass        = SECTOR_BOSSES[self.sector - 1]
         self.boss        = BossClass()
+        if self.mode == 'campaign':
+            hp_mult = 0.58
+            shield_mult = 0.55
+            self.boss.max_hp = max(1, int(self.boss.max_hp * hp_mult))
+            self.boss.hp = min(self.boss.hp, float(self.boss.max_hp))
+            self.boss.max_shield = max(0, int(self.boss.max_shield * shield_mult))
+            self.boss.shield = min(self.boss.shield, float(self.boss.max_shield))
+            self.boss.campaign_tuned = True
         sprites_all.add(self.boss)
         self.boss_active = True
         self.state       = 'boss'
@@ -217,11 +228,14 @@ class WaveManager:
         if self.mode == 'endless':
             tier = self._endless_tier()
             return 12 + self.wave * 3 + tier * 3
+        if self.mode == 'campaign':
+            return 6 + self.wave * 2 + self.sector * 2
         return 10 + self.wave * 3 + self.sector * 4
 
     def _spawn(self, enemies_group):
         enemy_id = choose_enemy_id(self._enemy_sector())
-        enemies_group.add(create_enemy(enemy_id, speed_mult=self.speed_mult))
+        hp_mult = 0.72 if self.mode == 'campaign' else 1.0
+        enemies_group.add(create_enemy(enemy_id, speed_mult=self.speed_mult, hp_mult=hp_mult))
 
     def _endless_tier(self):
         return min(TOTAL_SECTORS, 1 + max(0, self.wave - 1) // 3)

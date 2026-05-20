@@ -3,7 +3,8 @@ import math
 
 from core.settings import W, H, TOTAL_SECTORS, BG, BLUE, CYAN, WHITE, GREY, YELLOW, GREEN
 from core.assets import Assets
-from systems.loadout import SKINS, PART_CATEGORIES, DEFAULT_EQUIPPED_PARTS
+from systems.loadout import (SKINS, PART_CATEGORIES, DEFAULT_EQUIPPED_PARTS,
+                             campaign_power, recommended_power)
 from ui.components import Button, Panel, draw_text_shadow
 
 
@@ -43,6 +44,7 @@ class MainMenu:
         self._stars = None
         self._btn_quit.rect.topleft = (W // 2 - 160, H // 2 + 295)
         self._shop_layout = {}
+        self._profile_signature = None
         self._build_category_buttons()
 
     def set_starfield(self, starfield):
@@ -82,16 +84,26 @@ class MainMenu:
             self._level_buttons.append((sector, unlocked, Button(x, y, size, size, str(sector), color=color, text_color=text_color, font_key='large', radius=8)))
 
     def set_profile(self, owned_skins, equipped_skin, owned_parts, equipped_parts):
+        new_signature = (
+            tuple(sorted(owned_skins or {'classic'})),
+            equipped_skin or 'classic',
+            tuple(sorted(owned_parts or DEFAULT_EQUIPPED_PARTS.values())),
+            tuple(sorted((equipped_parts or {}).items())),
+        )
+        reset_browse = self._profile_signature != new_signature and self._screen != 'shop'
+        self._profile_signature = new_signature
         self._owned_skins = set(owned_skins or {'classic'})
         self._owned_parts = set(owned_parts or DEFAULT_EQUIPPED_PARTS.values())
         self._equipped_skin = equipped_skin or 'classic'
         self._equipped_parts = dict(DEFAULT_EQUIPPED_PARTS)
         self._equipped_parts.update(equipped_parts or {})
-        self._skin_index = next((i for i, skin in enumerate(SKINS) if skin['id'] == self._equipped_skin), 0)
-        for category in PART_CATEGORIES:
-            equipped = self._equipped_parts.get(category['id'], category['parts'][0]['id'])
-            self._selected_part_indices[category['id']] = next((i for i, part in enumerate(category['parts']) if part['id'] == equipped), 0)
-        self._build_category_buttons()
+        if reset_browse:
+            self._skin_index = next((i for i, skin in enumerate(SKINS) if skin['id'] == self._equipped_skin), 0)
+            for category in PART_CATEGORIES:
+                equipped = self._equipped_parts.get(category['id'], category['parts'][0]['id'])
+                self._selected_part_indices[category['id']] = next((i for i, part in enumerate(category['parts']) if part['id'] == equipped), 0)
+        if not self._category_buttons:
+            self._build_category_buttons()
 
     def _build_category_buttons(self):
         self._category_buttons = []
@@ -124,25 +136,25 @@ class MainMenu:
             button.rect.topleft = (x, y)
             button.rect.size = (btn_w, btn_h)
 
-        skin_panel = pygame.Rect(right_x, content_top, right_w, 236)
+        skin_panel = pygame.Rect(right_x, content_top, right_w, 248)
         part_panel = pygame.Rect(right_x, skin_panel.bottom + 28, right_w, page.bottom - skin_panel.bottom - 64)
 
-        arrow_size = (56, 48)
+        arrow_size = (58, 52)
         self._skin_prev_btn.rect.size = arrow_size
         self._skin_next_btn.rect.size = arrow_size
         self._part_prev_btn.rect.size = arrow_size
         self._part_next_btn.rect.size = arrow_size
 
-        self._skin_prev_btn.rect.topleft = (skin_panel.x + 22, skin_panel.y + 96)
-        self._skin_next_btn.rect.topright = (skin_panel.right - 22, skin_panel.y + 96)
-        self._part_prev_btn.rect.topleft = (part_panel.x + 22, part_panel.y + 78)
-        self._part_next_btn.rect.topright = (part_panel.right - 22, part_panel.y + 78)
+        self._skin_prev_btn.rect.topleft = (skin_panel.x + 22, skin_panel.y + 110)
+        self._skin_next_btn.rect.topright = (skin_panel.right - 22, skin_panel.y + 110)
+        self._part_prev_btn.rect.topleft = (part_panel.x + 22, part_panel.y + 98)
+        self._part_next_btn.rect.topright = (part_panel.right - 22, part_panel.y + 98)
 
-        action_w, action_h = 200, 54
+        action_w, action_h = 210, 56
         self._skin_action_btn.rect.size = (action_w, action_h)
         self._part_action_btn.rect.size = (action_w, action_h)
-        self._skin_action_btn.rect.bottomright = (skin_panel.right - 34, skin_panel.bottom - 20)
-        self._part_action_btn.rect.bottomright = (part_panel.right - 34, part_panel.bottom - 20)
+        self._skin_action_btn.rect.bottomright = (skin_panel.right - 30, skin_panel.bottom - 16)
+        self._part_action_btn.rect.bottomright = (part_panel.right - 30, part_panel.bottom - 14)
 
         self._btn_back.rect.topleft = (page.x + 30, page.bottom - self._btn_back.rect.height - 14)
 
@@ -193,9 +205,9 @@ class MainMenu:
 
         if self._screen == 'shop':
             self._layout_shop()
-            if self._skin_prev_btn.handle_event(event):
+            if self._shipyard_arrow_clicked(event, self._skin_prev_btn):
                 self._skin_index = (self._skin_index - 1) % len(SKINS)
-            if self._skin_next_btn.handle_event(event):
+            if self._shipyard_arrow_clicked(event, self._skin_next_btn):
                 self._skin_index = (self._skin_index + 1) % len(SKINS)
             skin = SKINS[self._skin_index]
             if self._skin_action_btn.handle_event(event):
@@ -205,9 +217,9 @@ class MainMenu:
                     self._selected_category_index = idx
             category = PART_CATEGORIES[self._selected_category_index]
             category_id = category['id']
-            if self._part_prev_btn.handle_event(event):
+            if self._shipyard_arrow_clicked(event, self._part_prev_btn):
                 self._selected_part_indices[category_id] = (self._selected_part_indices[category_id] - 1) % len(category['parts'])
-            if self._part_next_btn.handle_event(event):
+            if self._shipyard_arrow_clicked(event, self._part_next_btn):
                 self._selected_part_indices[category_id] = (self._selected_part_indices[category_id] + 1) % len(category['parts'])
             part = category['parts'][self._selected_part_indices[category_id]]
             owned = part['id'] in self._owned_parts
@@ -215,6 +227,18 @@ class MainMenu:
             if self._part_action_btn.handle_event(event):
                 return self._action_result('part', part['id'], part['cost'], owned, equipped)
         return None
+
+    def _shipyard_arrow_clicked(self, event, button):
+        if event.type == pygame.MOUSEMOTION:
+            button.hovered = button.rect.collidepoint(event.pos)
+            return False
+        if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, 'button', 0) == 1:
+            if button.rect.collidepoint(event.pos):
+                button.hovered = True
+                return True
+        if event.type == pygame.MOUSEBUTTONUP and getattr(event, 'button', 0) == 1:
+            button.hovered = button.rect.collidepoint(event.pos)
+        return False
 
     def _action_result(self, kind, item_id, cost, owned, equipped):
         if equipped:
@@ -271,6 +295,17 @@ class MainMenu:
         draw_text_shadow(surf, ctrl, (W // 2 - ctrl.get_width() // 2, H // 2 - 135))
         draw_text_shadow(surf, c1, (W // 2 - c1.get_width() // 2, H // 2 - 96))
         draw_text_shadow(surf, c2, (W // 2 - c2.get_width() // 2, H // 2 - 60))
+        ship_power = campaign_power(self._equipped_parts)
+        rec_sector = max(1, min(TOTAL_SECTORS, self._unlocked_sector))
+        rec_power = recommended_power(rec_sector)
+        power_col = GREEN if ship_power >= rec_power else YELLOW
+        power_text = a.render_fit(
+            ['medium', 'small'],
+            f"SHIP POWER  {ship_power}   RECOMMENDED FOR SECTOR {rec_sector}: {rec_power}",
+            power_col,
+            960,
+        )
+        draw_text_shadow(surf, power_text, (W // 2 - power_text.get_width() // 2, H // 2 - 24))
 
         if self._btn_continue:
             self._btn_play.rect.topleft = (W // 2 - 340, H // 2 + 20)
@@ -285,8 +320,18 @@ class MainMenu:
         label = a.render('small', "SECTOR SELECT", WHITE)
         draw_text_shadow(surf, label, (W // 2 - label.get_width() // 2, H // 2 + 100))
         for sector, unlocked, button in self._level_buttons:
+            completed = sector <= self._completed_sector
+            if completed:
+                button.color = (30, 140, 80)
+            elif unlocked:
+                button.color = (30, 120, 255)
+            else:
+                button.color = (42, 46, 66)
+            if unlocked and not completed and campaign_power(self._equipped_parts) < recommended_power(sector):
+                button.color = (170, 120, 35)
+            button.hover_color = tuple(min(255, c + 35) for c in button.color)
             button.draw(surf)
-            if sector <= self._completed_sector:
+            if completed:
                 mark = a.render('small', "OK", GREEN)
                 draw_text_shadow(surf, mark, (button.rect.centerx - mark.get_width() // 2, button.rect.bottom - 30))
             elif not unlocked:
@@ -318,14 +363,14 @@ class MainMenu:
         skin_panel = Panel(skin_rect.x, skin_rect.y, skin_rect.w, skin_rect.h, alpha=230)
         skin_panel.draw(surf)
         skin = SKINS[self._skin_index]
-        preview_rect = pygame.Rect(skin_rect.x + 88, skin_rect.y + 76, 118, 88)
+        preview_rect = pygame.Rect(skin_rect.x + 88, skin_rect.y + 88, 118, 88)
         self._draw_ship_preview(surf, skin, preview_rect)
         skin_title_x = preview_rect.right + 22
         skin_text_w = self._skin_action_btn.rect.left - skin_title_x - 28
-        draw_text_shadow(surf, a.render('small', "SHIP SKIN", CYAN), (skin_rect.x + 24, skin_rect.y + 22))
-        draw_text_shadow(surf, a.render_fit(['large', 'medium'], skin['name'], WHITE, skin_text_w), (skin_title_x, skin_rect.y + 68))
-        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"MODEL  {self._skin_index + 1} / {len(SKINS)}", YELLOW, 180), (skin_title_x, skin_rect.y + 112))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], skin['desc'], GREY, skin_text_w), (skin_title_x, skin_rect.y + 144))
+        draw_text_shadow(surf, a.render('small', "SHIP SKIN", CYAN), (skin_rect.x + 24, skin_rect.y + 24))
+        draw_text_shadow(surf, a.render_fit(['large', 'medium'], skin['name'], WHITE, skin_text_w), (skin_title_x, skin_rect.y + 84))
+        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"MODEL  {self._skin_index + 1} / {len(SKINS)}", YELLOW, 180), (skin_title_x, skin_rect.y + 130))
+        draw_text_shadow(surf, a.render_fit(['medium', 'small'], skin['desc'], GREY, skin_text_w), (skin_title_x, skin_rect.y + 164))
         self._skin_prev_btn.color = (55, 155, 255)
         self._skin_next_btn.color = (55, 155, 255)
         self._skin_prev_btn.hover_color = (80, 175, 255)
@@ -357,15 +402,15 @@ class MainMenu:
         part_rect = self._shop_layout['part_panel']
         part_panel = Panel(part_rect.x, part_rect.y, part_rect.w, part_rect.h, alpha=230)
         part_panel.draw(surf)
-        icon_rect = pygame.Rect(part_rect.x + 92, part_rect.y + 76, 110, 110)
+        icon_rect = pygame.Rect(part_rect.x + 92, part_rect.y + 90, 110, 110)
         self._draw_category_icon(surf, category['id'], icon_rect)
         part_title_x = icon_rect.right + 22
         part_text_w = max(260, self._part_action_btn.rect.left - part_title_x - 36)
-        draw_text_shadow(surf, a.render('small', category['name'].upper(), CYAN), (part_rect.x + 24, part_rect.y + 22))
-        draw_text_shadow(surf, a.render_fit(['large', 'medium'], part['name'], WHITE, part_text_w), (part_title_x, part_rect.y + 64))
-        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"ITEM  {self._selected_part_indices[category_id] + 1} / {len(category['parts'])}", YELLOW, 180), (part_title_x, part_rect.y + 108))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], part['desc'], GREY, part_text_w), (part_title_x, part_rect.y + 134))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], self._stats_text(part['stats']), WHITE, part_text_w), (part_title_x, part_rect.y + 170))
+        draw_text_shadow(surf, a.render('small', category['name'].upper(), CYAN), (part_rect.x + 24, part_rect.y + 24))
+        draw_text_shadow(surf, a.render_fit(['large', 'medium'], part['name'], WHITE, part_text_w), (part_title_x, part_rect.y + 84))
+        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"ITEM  {self._selected_part_indices[category_id] + 1} / {len(category['parts'])}", YELLOW, 180), (part_title_x, part_rect.y + 130))
+        draw_text_shadow(surf, a.render_fit(['medium', 'small'], part['desc'], GREY, part_text_w), (part_title_x, part_rect.y + 156))
+        draw_text_shadow(surf, a.render_fit(['medium', 'small'], self._stats_text(part['stats']), WHITE, part_text_w), (part_title_x, part_rect.y + 192))
         self._part_prev_btn.color = (55, 155, 255)
         self._part_next_btn.color = (55, 155, 255)
         self._part_prev_btn.hover_color = (80, 175, 255)

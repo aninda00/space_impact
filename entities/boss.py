@@ -109,7 +109,10 @@ class Boss(pygame.sprite.Sprite):
         self.attack_timer -= 1
         if self.attack_timer <= 0:
             bullets = self._attack()
-            self.attack_timer = self._attack_rate()
+            rate = self._attack_rate()
+            if getattr(self, 'campaign_tuned', False):
+                rate = int(rate * 1.25)
+            self.attack_timer = rate
             return bullets
 
         return []
@@ -187,6 +190,7 @@ class Boss(pygame.sprite.Sprite):
         hp_label = a.render('small', "HULL", WHITE)
         surf.blit(hp_label, (bx, hp_y - hp_label.get_height() - 6))
         # Name
+        name_gap = 10
         name_surf = a.render_fit(['medium', 'small'], self.NAME, WHITE, bw)
         surf.blit(name_surf, (W // 2 - name_surf.get_width() // 2, hp_y + bh + name_gap))
 

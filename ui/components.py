@@ -10,10 +10,11 @@ def draw_rounded_rect(surf, color, rect, radius=10, border=0, border_color=None)
         pygame.draw.rect(surf, border_color, rect, border, border_radius=radius)
 
 
-def draw_text_shadow(surf, text_surf, pos, shadow=(6, 8, 16), offset=(2, 2)):
+def draw_text_shadow(surf, text_surf, pos, shadow=(4, 6, 16), offset=(2, 2)):
     shadow_surf = text_surf.copy()
     shadow_surf.fill((*shadow, 255), special_flags=pygame.BLEND_RGBA_MULT)
     surf.blit(shadow_surf, (pos[0] + offset[0], pos[1] + offset[1]))
+    surf.blit(shadow_surf, (pos[0] - 1, pos[1] + 1))
     surf.blit(text_surf, pos)
 
 

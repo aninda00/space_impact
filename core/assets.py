@@ -21,8 +21,8 @@ class Assets:
             'huge':   f("segoeui", 64,  bold=True),
             'large':  f("segoeui", 40,  bold=True),
             'medium': f("segoeui", 28,  bold=True),
-            'small':  f("segoeui", 20),
-            'tiny':   f("segoeui", 15),
+            'small':  f("segoeui", 20,  bold=True),
+            'tiny':   f("segoeui", 15,  bold=True),
         }
         self._ready = True
 

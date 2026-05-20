@@ -99,6 +99,12 @@ class Player(pygame.sprite.Sprite):
             self.has_missile = True
         if stats.get('missile_interval'):
             self.missile_interval = stats['missile_interval']
+        if stats.get('double_shot'):
+            self.double_shot = True
+        if stats.get('triple_shot'):
+            self.triple_shot = True
+        if stats.get('piercing'):
+            self.piercing = True
 
     def handle_scroll(self, dy):
         """dy: -1 scroll up, +1 scroll down"""
@@ -162,7 +168,6 @@ class Player(pygame.sprite.Sprite):
         if self.has_missile and self.shot_count % self.missile_interval == 0:
             m = Missile(x, y)
             bullets.append(m)
-            return bullets
 
         def make(vy=0):
             return PlayerBullet(x, y, damage=self.damage,

@@ -105,8 +105,8 @@ def choose_enemy_id(sector):
     return table[-1][0]
 
 
-def create_enemy(enemy_id, speed_mult=1.0):
-    return DataEnemy(ENEMY_DEFS[enemy_id], speed_mult=speed_mult)
+def create_enemy(enemy_id, speed_mult=1.0, hp_mult=1.0):
+    return DataEnemy(ENEMY_DEFS[enemy_id], speed_mult=speed_mult, hp_mult=hp_mult)
 
 
 def _draw_enemy_shape(surf, spec):
@@ -174,7 +174,7 @@ def _draw_enemy_shape(surf, spec):
 class DataEnemy(pygame.sprite.Sprite):
     """Enemy instance built from ENEMY_DEFS data."""
 
-    def __init__(self, spec, speed_mult=1.0):
+    def __init__(self, spec, speed_mult=1.0, hp_mult=1.0):
         super().__init__()
         self.spec = spec
         self.HP = spec.hp
@@ -185,7 +185,7 @@ class DataEnemy(pygame.sprite.Sprite):
         self.SIZE = spec.size
         self.COLOR = spec.color
 
-        scaled_hp = int(spec.hp * (0.9 + speed_mult * 0.32))
+        scaled_hp = int(spec.hp * (0.9 + speed_mult * 0.32) * hp_mult)
         self.hp = max(spec.hp, scaled_hp)
         self.max_hp = self.hp
         self.speed = spec.speed * speed_mult

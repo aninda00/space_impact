@@ -16,7 +16,8 @@ from entities.bullet   import Missile
 from systems.wave_manager   import WaveManager
 from systems.upgrade_system import UpgradeSystem
 from systems.story          import SECTOR_STORIES, WIN_TEXT
-from systems.loadout        import SKINS_BY_ID, PARTS_BY_ID, DEFAULT_EQUIPPED_PARTS
+from systems.loadout        import (SKINS_BY_ID, PARTS_BY_ID, DEFAULT_EQUIPPED_PARTS,
+                                    campaign_power, recommended_power)
 
 from ui.hud            import HUD
 from ui.menu           import MainMenu
@@ -72,6 +73,7 @@ class Game:
         self._banner_timer  = 0
         self._boss_warn_timer = 0
         self._sector_clear_timer = 0
+        self._last_campaign_reward = 0
         self._continue_btn  = Button(W // 2 - 160, H // 2 + 160, 320, 60,
                                      "NEXT LEVEL", color=(30, 120, 255))
         self._sector_menu_btn = Button(W // 2 - 160, H // 2 + 225, 320, 55,
@@ -639,19 +641,31 @@ class Game:
         t1 = a.render_fit(['huge', 'large', 'medium'], f"SECTOR {sec} CLEARED!", GREEN, 780)
         t2 = a.render_fit(['large', 'medium', 'small'], f"SCORE  {self.player.score:,}", YELLOW, 700)
         t2b = a.render_fit(['medium', 'small'], f"CREDITS  {self.credits:,}", GOLD, 700)
+        reward_text = (
+            f"FIRST-CLEAR REWARD: {self._last_campaign_reward} CREDITS"
+            if self._last_campaign_reward > 0 else
+            "REPLAY CLEAR: PROGRESS ALREADY CLAIMED"
+        )
+        t2c = a.render_fit(['medium', 'small'], reward_text, WHITE, 700)
         self.screen.blit(t1, (W // 2 - t1.get_width() // 2, H // 2 - 212))
         self.screen.blit(t2, (W // 2 - t2.get_width() // 2, H // 2 - 126))
         self.screen.blit(t2b, (W // 2 - t2b.get_width() // 2, H // 2 - 82))
+        self.screen.blit(t2c, (W // 2 - t2c.get_width() // 2, H // 2 - 48))
 
         if next_sec <= TOTAL_SECTORS:
             data = SECTOR_STORIES.get(next_sec, {})
             t3 = a.render_fit(['large', 'medium', 'small'], "NEXT SECTOR", WHITE, 700)
             t4 = a.render_fit(['medium', 'small', 'tiny'], data.get('title', ''), CYAN, 760)
-            self.screen.blit(t3, (W // 2 - t3.get_width() // 2, H // 2 - 20))
-            self.screen.blit(t4, (W // 2 - t4.get_width() // 2, H // 2 + 34))
+            power = campaign_power(self.equipped_parts)
+            rec = recommended_power(next_sec)
+            power_col = GREEN if power >= rec else YELLOW
+            t5 = a.render_fit(['medium', 'small'], f"SHIP POWER {power} / RECOMMENDED {rec}", power_col, 760)
+            self.screen.blit(t3, (W // 2 - t3.get_width() // 2, H // 2 - 8))
+            self.screen.blit(t4, (W // 2 - t4.get_width() // 2, H // 2 + 38))
+            self.screen.blit(t5, (W // 2 - t5.get_width() // 2, H // 2 + 76))
 
-        self._continue_btn.rect.topleft = (W // 2 - 160, H // 2 + 118)
-        self._sector_menu_btn.rect.topleft = (W // 2 - 160, H // 2 + 190)
+        self._continue_btn.rect.topleft = (W // 2 - 160, H // 2 + 130)
+        self._sector_menu_btn.rect.topleft = (W // 2 - 160, H // 2 + 202)
 
         self._continue_btn.draw(self.screen)
         self._sector_menu_btn.draw(self.screen)
@@ -879,7 +893,7 @@ class Game:
             self._start_sector    = sector
             saved_state          = data.get('state', 'PLAYING')
             self.wave_mgr.sector = sector
-            self.wave_mgr.speed_mult = 1.0 + (sector - 1) * 0.24
+            self.wave_mgr.speed_mult = 1.0 + (sector - 1) * (0.14 if self.game_mode == 'campaign' else 0.24)
             self._story_timer       = data.get('story_timer', 0)
             self._boss_warn_timer   = data.get('boss_warn_timer', 0)
             self._wave_banner_timer = data.get('wave_banner_timer', 0)
@@ -937,16 +951,27 @@ class Game:
     def _record_campaign_clear(self, sector):
         if self.game_mode != 'campaign':
             return
+        self._last_campaign_reward = 0
         try:
             data = self._read_save_data()
             current_completed = data.get('campaign_completed_sector', 0)
             current_unlocked = data.get('campaign_unlocked_sector', 1)
+            if sector > current_completed:
+                self._last_campaign_reward = self._campaign_clear_reward(sector)
+                self.credits += self._last_campaign_reward
+                if sector == 1 and 'laser_cannon_mk2' not in self.owned_parts:
+                    self.owned_parts.add('laser_cannon_mk2')
+                    self.equipped_parts['laser_cannon'] = 'laser_cannon_mk2'
+                data['campaign_rewarded_sector'] = max(data.get('campaign_rewarded_sector', 0), sector)
             data['campaign_completed_sector'] = max(current_completed, sector)
             data['campaign_unlocked_sector'] = max(current_unlocked, min(TOTAL_SECTORS, sector + 1))
             self._apply_profile_to_data(data)
             self._write_save_data(data)
         except Exception:
             pass
+
+    def _campaign_clear_reward(self, sector):
+        return 180 + int(sector) * 90
 
     def _award_credits(self, amount):
         self.credits = max(0, self.credits + int(amount))
@@ -961,6 +986,7 @@ class Game:
             self.equipped_skin = data.get('equipped_skin', 'classic')
             self.equipped_parts = dict(DEFAULT_EQUIPPED_PARTS)
             self.equipped_parts.update(data.get('equipped_parts', {}))
+            self._sync_campaign_rewards(data)
             self._write_save_data(data)
         except Exception:
             self.credits = 0
@@ -1001,7 +1027,21 @@ class Game:
         data.setdefault('equipped_parts', dict(DEFAULT_EQUIPPED_PARTS))
         data.setdefault('campaign_unlocked_sector', 1)
         data.setdefault('campaign_completed_sector', 0)
+        data.setdefault('campaign_rewarded_sector', 0)
         return data
+
+    def _sync_campaign_rewards(self, data):
+        completed = int(data.get('campaign_completed_sector', 0))
+        rewarded = int(data.get('campaign_rewarded_sector', 0))
+        if completed <= rewarded:
+            return
+        for sector in range(rewarded + 1, completed + 1):
+            self.credits += self._campaign_clear_reward(sector)
+            if sector == 1 and 'laser_cannon_mk2' not in self.owned_parts:
+                self.owned_parts.add('laser_cannon_mk2')
+                self.equipped_parts['laser_cannon'] = 'laser_cannon_mk2'
+        data['campaign_rewarded_sector'] = completed
+        self._apply_profile_to_data(data)
 
     def _apply_profile_to_data(self, data):
         self._ensure_profile_defaults(data)
