@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from core.settings import (W, H, P_LIVES, P_MAX_SHIELD, P_SHIELD_REGEN,
                             P_INVINCIBLE, P_SHOOT_RATE, P_SCROLL_VEL,
                             B_SPEED, B_DAMAGE, CYAN, BLUE, GREEN, YELLOW,
@@ -26,6 +27,7 @@ class Player(pygame.sprite.Sprite):
         self.score      = 0
         self.sector     = 1
         self.thruster_particles = []
+        self.damage_particles = []
         self.mouse_control = False   # set True to enable direct mouse steering
 
         # Upgrade state
@@ -123,10 +125,12 @@ class Player(pygame.sprite.Sprite):
             self.pos_y += (target_y - self.pos_y) * 0.12
             self.vy = 0.0
         else:
+            up_k = getattr(self, 'up_key', pygame.K_w)
+            down_k = getattr(self, 'down_key', pygame.K_s)
             move_dir = (
-                keys[pygame.K_s] or keys[pygame.K_DOWN]
+                keys[down_k] or keys[pygame.K_s] or keys[pygame.K_DOWN]
             ) - (
-                keys[pygame.K_w] or keys[pygame.K_UP]
+                keys[up_k] or keys[pygame.K_w] or keys[pygame.K_UP]
             )
             if move_dir:
                 self.vy += move_dir * self.keyboard_accel
@@ -145,11 +149,22 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = max(10, min(W // 2 - self.rect.width, self.rect.x))
 
         # Spawn thruster exhaust particles
-        from entities.effects import ThrusterParticle
+        from entities.effects import ThrusterParticle, SmokeParticle, SparkParticle
         if random.random() < 0.8:
             self.thruster_particles.append(
                 ThrusterParticle(self.rect.left + 5, self.rect.centery + random.randint(-4, 4))
             )
+
+        # Low HP / Shield Damage trailing smoke & sparks
+        if self.shield / float(self.max_shield) < 0.35 or self.lives <= 1:
+            if random.random() < 0.5:
+                self.damage_particles.append(
+                    SmokeParticle(self.rect.left + random.randint(10, 40), self.rect.centery + random.randint(-8, 8))
+                )
+            if random.random() < 0.25:
+                self.damage_particles.append(
+                    SparkParticle(self.rect.left + random.randint(15, 50), self.rect.centery + random.randint(-6, 6))
+                )
 
         # Timers
         if self.invincible  > 0: self.invincible  -= 1
@@ -224,10 +239,16 @@ class Player(pygame.sprite.Sprite):
         return False
 
     def draw(self, surf):
-        # Draw thruster trail particles
+        # Draw thruster & damage trail particles
         if hasattr(self, 'thruster_particles'):
             self.thruster_particles = [p for p in self.thruster_particles if p.alive()]
             for p in self.thruster_particles:
+                p.update()
+                p.draw(surf)
+
+        if hasattr(self, 'damage_particles'):
+            self.damage_particles = [p for p in self.damage_particles if p.alive()]
+            for p in self.damage_particles:
                 p.update()
                 p.draw(surf)
 

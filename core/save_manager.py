@@ -126,6 +126,18 @@ class SaveManager:
             'campaign_unlocked_sector': 1,
             'campaign_completed_sector': 0,
             'campaign_rewarded_sector': 0,
+            'sfx_volume': 0.7,
+            'music_volume': 0.5,
+            'audio_muted': False,
+            'control_scheme': 'hybrid',
+            'keybinds': {
+                'up': 'W',
+                'down': 'S',
+                'mouse_toggle': 'M',
+                'pause': 'ESCAPE'
+            },
+            'unlocked_codex': ['scout', 'fighter', 'vanguard'],
+            'unlocked_achievements': [],
         }
         for k, v in defaults.items():
             data.setdefault(k, v)

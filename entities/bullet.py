@@ -11,10 +11,11 @@ class PlayerBullet(pygame.sprite.Sprite):
         self.vx       = spd
         self.vy       = angle_y
         c             = color or CYAN
-        self.image    = pygame.Surface((22, 6), pygame.SRCALPHA)
-        # Glow core
-        pygame.draw.rect(self.image, (*c, 255), (4, 1, 16, 4), border_radius=3)
-        pygame.draw.rect(self.image, WHITE,     (10, 2, 8, 2), border_radius=2)
+        self.image    = pygame.Surface((32, 12), pygame.SRCALPHA)
+        # Outer energy aura glow
+        pygame.draw.ellipse(self.image, (*c, 90), (0, 0, 32, 12))
+        pygame.draw.rect(self.image, (*c, 255), (4, 3, 22, 6), border_radius=3)
+        pygame.draw.rect(self.image, WHITE,     (12, 4, 12, 4), border_radius=2)
         self.rect     = self.image.get_rect(midleft=(x, y))
 
     def update(self):
@@ -33,9 +34,12 @@ class Missile(pygame.sprite.Sprite):
         self.target  = None
         self.vx      = 10.0
         self.vy      = 0.0
-        self.image   = pygame.Surface((30, 10), pygame.SRCALPHA)
-        pygame.draw.polygon(self.image, ORANGE, [(0,5),(8,0),(28,5),(8,10)])
-        pygame.draw.rect(self.image,   YELLOW,  (20,3,8,4),   border_radius=2)
+        self.image   = pygame.Surface((40, 16), pygame.SRCALPHA)
+        # Propulsion glow trail
+        pygame.draw.ellipse(self.image, (255, 100, 0, 120), (0, 3, 18, 10))
+        pygame.draw.polygon(self.image, ORANGE, [(6, 8), (14, 2), (36, 8), (14, 14)])
+        pygame.draw.rect(self.image,   YELLOW,  (26, 5, 10, 6), border_radius=3)
+        pygame.draw.rect(self.image,   WHITE,   (30, 6, 5, 4), border_radius=2)
         self.rect    = self.image.get_rect(midleft=(x, y))
         self.age     = 0
 
@@ -63,9 +67,10 @@ class EnemyBullet(pygame.sprite.Sprite):
         self.vx     = vx
         self.vy     = vy
         c           = color or RED
-        self.image  = pygame.Surface((18, 5), pygame.SRCALPHA)
-        pygame.draw.rect(self.image, (*c, 255), (0, 1, 16, 3), border_radius=2)
-        pygame.draw.rect(self.image, WHITE,     (0, 1,  8, 3), border_radius=2)
+        self.image  = pygame.Surface((24, 10), pygame.SRCALPHA)
+        pygame.draw.ellipse(self.image, (*c, 90), (0, 0, 24, 10))
+        pygame.draw.rect(self.image, (*c, 255), (3, 2, 18, 6), border_radius=3)
+        pygame.draw.rect(self.image, WHITE,     (3, 3, 8, 4), border_radius=2)
         self.rect   = self.image.get_rect(midright=(x, y))
 
     def update(self):

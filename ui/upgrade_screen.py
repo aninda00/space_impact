@@ -1,16 +1,24 @@
+"""
+ui/upgrade_screen.py
+--------------------
+Warm Retro Upgrade Card Selector for Space Impact — Remastered.
+Styled with the curated retro color palette:
+#dfa05d (Amber), #ac5045 (Terra), #658761 (Sage), #dcc9a9 (Cream), #b83a2d (Crimson), #4e6851 (Moss).
+"""
 import pygame
 import math
 from core.settings import (W, H, PANEL, BORDER, WHITE, GREY, DGREY,
                             CYAN, GREEN, YELLOW, ORANGE, RED, PURPLE,
-                            BLUE, BG, DARK)
+                            BLUE, BG, DARK, GOLD,
+                            RETRO_AMBER, RETRO_TERRA, RETRO_SAGE, RETRO_CREAM, RETRO_CRIMSON, RETRO_MOSS)
 from core.assets import Assets
 from systems.upgrade_system import RARITY_COLORS
-from ui.components import Panel, Button, draw_glow
+from ui.components import Panel, Button, draw_glow_rect, draw_text_shadow
 
 
-CARD_W  = 340
-CARD_H  = 420
-CARD_GAP= 50
+CARD_W   = 360
+CARD_H   = 460
+CARD_GAP = 40
 
 
 class UpgradeScreen:
@@ -19,14 +27,14 @@ class UpgradeScreen:
         self._hovered   = -1
         self._chosen    = None
         self._tick      = 0
-        self._anim_in   = 0   # 0-30 fade-in frames
+        self._anim_in   = 0
 
     def set_upgrades(self, upgrades):
         self._upgrades  = upgrades
         self._hovered   = -1
         self._chosen    = None
         self._tick      = 0
-        self._anim_in   = 30
+        self._anim_in   = 25
 
     def _card_rects(self):
         n      = len(self._upgrades)
@@ -35,7 +43,7 @@ class UpgradeScreen:
         rects  = []
         for i in range(n):
             x = start + i * (CARD_W + CARD_GAP)
-            y = H // 2 - CARD_H // 2
+            y = H // 2 - CARD_H // 2 + 30
             rects.append(pygame.Rect(x, y, CARD_W, CARD_H))
         return rects
 
@@ -64,20 +72,19 @@ class UpgradeScreen:
 
     def draw(self, surf, upgrade_system):
         a      = Assets()
-        alpha  = int(255 * (1 - self._anim_in / 30))
+        alpha  = int(255 * (1 - self._anim_in / 25))
 
-        # Dimmed background
         overlay = pygame.Surface((W, H), pygame.SRCALPHA)
-        overlay.fill((0, 0, 15, 200))
+        overlay.fill((14, 18, 20, 215))
         surf.blit(overlay, (0, 0))
 
-        # Title
-        t1 = a.render('huge',   "CHOOSE UPGRADE", WHITE)
-        t2 = a.render('medium', "Select one to continue to the next wave", GREY)
+        t1 = a.render_glow('huge', "CHOOSE SHIP UPGRADE", RETRO_AMBER, glow_color=RETRO_TERRA, glow_radius=3)
+        t2 = a.render('small', "SELECT ONE COMPONENT UPGRADE TO REINFORCE YOUR SHIP", RETRO_CREAM)
+        
         t1.set_alpha(alpha)
         t2.set_alpha(alpha)
-        surf.blit(t1, (W // 2 - t1.get_width() // 2, 80))
-        surf.blit(t2, (W // 2 - t2.get_width() // 2, 158))
+        surf.blit(t1, (W // 2 - t1.get_width() // 2, 70))
+        surf.blit(t2, (W // 2 - t2.get_width() // 2, 138))
 
         rects = self._card_rects()
         for i, (u, rect) in enumerate(zip(self._upgrades, rects)):
@@ -86,88 +93,72 @@ class UpgradeScreen:
     def _draw_card(self, surf, u, rect, idx, upgrade_system, alpha):
         a        = Assets()
         hovered  = self._hovered == idx
-        chosen   = self._chosen  == idx
-        r_color  = RARITY_COLORS[u['rarity']]
+        r_color  = RETRO_SAGE if u['rarity'] == 'common' else (RETRO_AMBER if u['rarity'] == 'rare' else RETRO_TERRA)
         u_color  = u['color']
         level    = upgrade_system.level_of(u['id'])
         max_lv   = u['max']
 
-        # Hover lift
         draw_rect = rect.copy()
         if hovered:
-            draw_rect.y -= 12
+            draw_rect.y -= 10
 
-        # Glow behind card
         if hovered:
-            draw_glow(surf, u_color, draw_rect.centerx, draw_rect.centery,
-                      200, alpha=40)
+            draw_glow_rect(surf, r_color, draw_rect, radius=14, glow_spread=4, alpha=80)
 
-        # Card background
         card_surf = pygame.Surface((CARD_W, CARD_H), pygame.SRCALPHA)
-        bg_alpha  = 230 if hovered else 200
-        pygame.draw.rect(card_surf, (*PANEL, bg_alpha), (0, 0, CARD_W, CARD_H),
-                         border_radius=16)
-        border_col = u_color if hovered else BORDER
-        pygame.draw.rect(card_surf, (*border_col, 255), (0, 0, CARD_W, CARD_H),
-                         3, border_radius=16)
+        bg_alpha  = 245 if hovered else 225
+        pygame.draw.rect(card_surf, (22, 28, 30, bg_alpha), (0, 0, CARD_W, CARD_H), border_radius=14)
+        
+        b_color = r_color if hovered else RETRO_MOSS
+        pygame.draw.rect(card_surf, (*b_color, 255), (0, 0, CARD_W, CARD_H), 3 if hovered else 2, border_radius=14)
+        
         card_surf.set_alpha(alpha)
         surf.blit(card_surf, draw_rect.topleft)
 
-        # Icon background circle
+        # Rarity Pill
+        rar_pill = pygame.Surface((100, 24), pygame.SRCALPHA)
+        pygame.draw.rect(rar_pill, (*r_color, 50), (0, 0, 100, 24), border_radius=12)
+        pygame.draw.rect(rar_pill, (*r_color, 230), (0, 0, 100, 24), 1, border_radius=12)
+        rar_txt = a.render('tiny', u['rarity'].upper(), r_color)
+        rar_pill.blit(rar_txt, (50 - rar_txt.get_width() // 2, 12 - rar_txt.get_height() // 2))
+        surf.blit(rar_pill, (draw_rect.x + 18, draw_rect.y + 18))
+
         icon_cx = draw_rect.centerx
-        icon_cy = draw_rect.y + 90
-        pygame.draw.circle(surf, tuple(c // 4 for c in u_color), (icon_cx, icon_cy), 55)
-        pygame.draw.circle(surf, u_color, (icon_cx, icon_cy), 55, 3)
+        icon_cy = draw_rect.y + 110
+        pygame.draw.circle(surf, (28, 34, 36), (icon_cx, icon_cy), 48)
+        pygame.draw.circle(surf, r_color if hovered else RETRO_MOSS, (icon_cx, icon_cy), 48, 2)
 
-        # Icon text (emoji)
-        icon_surf = a.render('huge', u['icon'], u_color)
-        icon_surf.set_alpha(alpha)
-        surf.blit(icon_surf, (icon_cx - icon_surf.get_width() // 2,
-                               icon_cy - icon_surf.get_height() // 2))
+        icon_surf = a.render('huge', u['icon'], WHITE)
+        surf.blit(icon_surf, (icon_cx - icon_surf.get_width() // 2, icon_cy - icon_surf.get_height() // 2))
 
-        # Rarity badge
-        rar_surf = a.render('tiny', u['rarity'].upper(), r_color)
-        rar_surf.set_alpha(alpha)
-        surf.blit(rar_surf, (draw_rect.x + 14, draw_rect.y + 14))
+        name_surf = a.render_fit(['large', 'medium', 'small'], u['name'].upper(), WHITE, CARD_W - 36)
+        surf.blit(name_surf, (icon_cx - name_surf.get_width() // 2, draw_rect.y + 180))
 
-        # Name
-        name_surf = a.render_fit(['medium', 'small', 'tiny'], u['name'], WHITE, CARD_W - 40)
-        name_surf.set_alpha(alpha)
-        surf.blit(name_surf, (icon_cx - name_surf.get_width() // 2, draw_rect.y + 158))
+        desc_surf = a.render_fit(['small', 'tiny'], u['desc'], (210, 205, 195), CARD_W - 40)
+        surf.blit(desc_surf, (icon_cx - desc_surf.get_width() // 2, draw_rect.y + 225))
 
-        # Desc
-        desc_surf = a.render_fit(['small', 'tiny'], u['desc'], GREY, CARD_W - 44)
-        desc_surf.set_alpha(alpha)
-        surf.blit(desc_surf, (icon_cx - desc_surf.get_width() // 2, draw_rect.y + 200))
+        det_surf = a.render_fit(['small', 'tiny'], u['detail'], RETRO_AMBER, CARD_W - 40)
+        surf.blit(det_surf, (icon_cx - det_surf.get_width() // 2, draw_rect.y + 265))
 
-        # Detail
-        det_surf = a.render_fit(['tiny'], u['detail'], u_color, CARD_W - 44)
-        det_surf.set_alpha(alpha)
-        surf.blit(det_surf, (icon_cx - det_surf.get_width() // 2, draw_rect.y + 234))
-
-        # Level pips
         if max_lv > 1:
             pip_total = CARD_W - 60
             pip_w     = pip_total // max_lv - 4
-            pip_h     = 12
-            py        = draw_rect.y + CARD_H - 60
+            pip_h     = 10
+            py        = draw_rect.y + CARD_H - 100
             for j in range(max_lv):
                 px  = draw_rect.x + 30 + j * (pip_w + 4)
-                col = u_color if j < level else DGREY
-                pygame.draw.rect(surf, col, (px, py, pip_w, pip_h), border_radius=4)
-            lv_surf = a.render('tiny', f"LV {level} / {max_lv}", GREY)
-            lv_surf.set_alpha(alpha)
-            surf.blit(lv_surf, (icon_cx - lv_surf.get_width() // 2, draw_rect.y + CARD_H - 40))
-        else:
-            if level > 0:
-                lv_surf = a.render('small', "✓ EQUIPPED", GREEN)
-            else:
-                lv_surf = a.render('small', "CLICK TO EQUIP", u_color)
-            lv_surf.set_alpha(alpha)
+                col = r_color if j < level else (34, 40, 42)
+                pygame.draw.rect(surf, col, (px, py, pip_w, pip_h), border_radius=3)
+            
+            lv_surf = a.render('tiny', f"LEVEL {level} / {max_lv}", GREY)
             surf.blit(lv_surf, (icon_cx - lv_surf.get_width() // 2, draw_rect.y + CARD_H - 78))
+        else:
+            status_txt = "✓ EQUIPPED" if level > 0 else "SINGLE UPGRADE"
+            lv_surf = a.render('small', status_txt, RETRO_SAGE if level > 0 else GREY)
+            surf.blit(lv_surf, (icon_cx - lv_surf.get_width() // 2, draw_rect.y + CARD_H - 85))
 
-        # Hover CTA
-        if hovered:
-            cta = a.render('small', "SELECT", u_color)
-            cta.set_alpha(alpha)
-            surf.blit(cta, (icon_cx - cta.get_width() // 2, draw_rect.y + CARD_H - 44))
+        btn_col = r_color if hovered else RETRO_MOSS
+        sel_btn = Button(draw_rect.x + 30, draw_rect.y + CARD_H - 52, CARD_W - 60, 38,
+                         "SELECT UPGRADE", color=btn_col, font_key='small', radius=6)
+        sel_btn.hovered = hovered
+        sel_btn.draw(surf)

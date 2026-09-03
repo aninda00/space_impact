@@ -7,34 +7,10 @@ from core.settings import (W, H, WHITE, CYAN, BLUE, GREEN, YELLOW,
 from entities.bullet import EnemyBullet
 
 
-def _shade(color, amount):
-    return tuple(max(0, min(255, ch + amount)) for ch in color)
-
-
-def _draw_spines(surf, color, w, h, anchors, upper=True):
-    for x, span, height in anchors:
-        base_y = h // 2 - span if upper else h // 2 + span
-        tip_y = base_y - height if upper else base_y + height
-        pygame.draw.polygon(surf, color, [
-            (x - span, base_y),
-            (x + span, base_y),
-            (x, tip_y),
-        ])
-
-
-def _draw_eye(surf, cx, cy, rx, ry, glow, pupil=(8, 10, 20)):
-    pygame.draw.ellipse(surf, _shade(glow, -90), (cx - rx - 5, cy - ry - 5, rx * 2 + 10, ry * 2 + 10))
-    pygame.draw.ellipse(surf, glow, (cx - rx, cy - ry, rx * 2, ry * 2))
-    pygame.draw.ellipse(surf, WHITE, (cx - rx // 3, cy - ry // 2, rx, ry))
-    pygame.draw.ellipse(surf, pupil, (cx - rx // 4, cy - ry // 3, max(4, rx // 2), max(6, ry)))
-
-
-def _draw_engine(surf, w, h, color):
-    pygame.draw.rect(surf, _shade(color, -80), (w - 36, h // 2 - 18, 34, 36), border_radius=9)
-    pygame.draw.rect(surf, color, (w - 24, h // 2 - 10, 22, 20), border_radius=7)
-    pygame.draw.polygon(surf, (*_shade(color, 40), 170), [
-        (w - 2, h // 2 - 12), (w - 2, h // 2 + 12), (w + 18, h // 2)
-    ])
+from entities.boss_art import (shade as _shade,
+                                draw_spines as _draw_spines,
+                                draw_eye as _draw_eye,
+                                draw_engine as _draw_engine)
 
 
 class Boss(pygame.sprite.Sprite):
@@ -147,7 +123,7 @@ class Boss(pygame.sprite.Sprite):
             return 0
         return max(0, self.shield / self.max_shield)
 
-    def draw_healthbar(self, surf):
+    def draw_healthbar(self, surf, offset_y=0):
         from core.assets import Assets
         a   = Assets()
         bw  = 600
@@ -156,7 +132,7 @@ class Boss(pygame.sprite.Sprite):
         shield_h = 14
         gap = 8
         total_h = bh + shield_h + gap + 72
-        by  = H - total_h - 84
+        by  = H - total_h - 84 + offset_y
         # Background
         pygame.draw.rect(surf, (18, 22, 38), (bx - 16, by - 16, bw + 32, total_h + 24), border_radius=14)
 

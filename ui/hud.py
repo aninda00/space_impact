@@ -1,153 +1,162 @@
+"""
+ui/hud.py
+---------
+Warm Retro Cockpit HUD for Space Impact — Remastered.
+Styled with the curated retro palette:
+#dfa05d (Amber), #ac5045 (Terra), #658761 (Sage), #dcc9a9 (Cream), #b83a2d (Crimson), #4e6851 (Moss).
+Features distinct Vital, Score, and Tactical consoles with dedicated Pause positioning.
+"""
 import pygame
+import math
 from core.settings import (W, H, TOTAL_SECTORS, CYAN, GREEN, RED, YELLOW,
-                            WHITE, GREY, DGREY, PANEL, BORDER, BLUE, ORANGE)
+                            WHITE, GREY, DGREY, PANEL, BORDER, BLUE, ORANGE, GOLD, PURPLE,
+                            RETRO_AMBER, RETRO_TERRA, RETRO_SAGE, RETRO_CREAM, RETRO_CRIMSON, RETRO_MOSS)
 from core.assets import Assets
-from ui.components import ProgressBar, Panel, draw_text_shadow
+from ui.components import ProgressBar, Panel, draw_text_shadow, draw_glow_rect
 
 
 class HUD:
     def __init__(self):
-        self._shield_bar  = ProgressBar(20, 26, 340, 24, color=CYAN)
-        self._wave_bar    = ProgressBar(W - 360, 72, 340, 14, color=(80, 200, 100))
-        self._panel_top_l = Panel(10, 10, 390, 112, alpha=230)
-        self._panel_top_r = Panel(W - 370, 10, 360, 96, alpha=215)
-        self._panel_score = Panel(W // 2 - 150, 10, 300, 96, alpha=215)
-        self._combo_timer = 0
-        self._combo_count = 0
-        self._last_score  = 0
-        self._floaters    = []   # [(text, x, y, life, max_life)]
+        # Left Console: Vital Shield & Lives
+        self._panel_vital = Panel(24, 16, 360, 84, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        self._shield_bar  = ProgressBar(42, 44, 320, 18, color=RETRO_SAGE, radius=4)
+
+        # Center Console: Score Odometer
+        self._panel_score = Panel(W // 2 - 200, 16, 400, 84, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+
+        # Right Console: Sector Radar & Wave (Leaves space for Pause Button on far right)
+        self._panel_radar = Panel(W - 490, 16, 340, 84, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        self._wave_bar    = ProgressBar(W - 470, 68, 300, 14, color=RETRO_SAGE, radius=4)
+
+        self._floaters    = []   # [(text, x, y, life, max_life, color)]
         self._toast_text  = ''
         self._toast_life  = 0
-        self._toast_max   = 90  # frames
+        self._toast_max   = 90
+        self._pulse_tick  = 0
 
     def add_kill_floater(self, x, y, points):
-        self._floaters.append([f"+{points}", x, y, 45, 45])
+        self._floaters.append([f"+{points}", x, y, 45, 45, RETRO_AMBER])
 
-    def show_toast(self, message, duration_frames=90):
-        """Show a brief on-screen toast message (e.g. mode switch feedback)."""
+    def show_toast(self, message, duration_frames=100):
         self._toast_text = message
         self._toast_life = duration_frames
         self._toast_max  = duration_frames
 
-    def update(self, score):
-        if score != self._last_score:
-            self._last_score = score
+    def update(self, score=0):
+        self._pulse_tick += 1
         self._floaters = [f for f in self._floaters if f[3] > 0]
         for f in self._floaters:
             f[3] -= 1
-            f[2] -= 1   # float upward
+            f[2] -= 1.2
         if self._toast_life > 0:
             self._toast_life -= 1
 
-    def _blit_text(self, surf, text_surf, pos, shadow=(8, 10, 18), offset=(1, 1)):
-        shadow_surf = text_surf.copy()
-        shadow_surf.fill((*shadow, 255), special_flags=pygame.BLEND_RGBA_MULT)
-        surf.blit(shadow_surf, (pos[0] + offset[0], pos[1] + offset[1]))
-        surf.blit(text_surf, pos)
-
     def draw(self, surf, player, wave_mgr):
         a = Assets()
-        label_color = (235, 240, 255)
-        soft_label  = (205, 215, 240)
-        self._panel_top_l.draw(surf)
-        self._panel_top_r.draw(surf)
+        self._panel_vital.draw(surf)
         self._panel_score.draw(surf)
+        self._panel_radar.draw(surf)
 
-        # ── Shield bar (left) ─────────────────────────────────────────────
-        shield_ratio = player.shield / player.max_shield
-        bar_color    = (
-            CYAN   if shield_ratio > 0.60 else
-            YELLOW if shield_ratio > 0.30 else
-            RED
-        )
+        # ── Left Console: Shield & Hull Status ─────────────────────────────
+        shield_ratio = player.shield / float(max(1, player.max_shield))
+        if shield_ratio < 0.30:
+            pulse = math.sin(self._pulse_tick * 0.2) * 0.5 + 0.5
+            bar_color = RETRO_CRIMSON if pulse > 0.4 else RETRO_TERRA
+        elif shield_ratio < 0.60:
+            bar_color = RETRO_AMBER
+        else:
+            bar_color = RETRO_SAGE
+
         self._shield_bar.color = bar_color
         self._shield_bar.draw(surf, shield_ratio)
 
-        # Shield label
-        s1 = a.render('small', f"SHIELD  {int(player.shield)}/{int(player.max_shield)}", label_color)
-        self._blit_text(surf, s1, (22, 67))
+        s_lbl = a.render('tiny', "ENERGY SHIELD", RETRO_CREAM)
+        s_val = a.render('small', f"{int(player.shield)} / {int(player.max_shield)}", WHITE)
+        surf.blit(s_lbl, (42, 23))
+        surf.blit(s_val, (362 - s_val.get_width(), 21))
 
-        # ── Score (center) ────────────────────────────────────────────────
-        sc = a.render('large', f"{player.score:08d}", WHITE)
-        self._blit_text(surf, sc, (W // 2 - sc.get_width() // 2, 16), shadow=(10, 12, 22))
-        lbl = a.render('small', "SCORE", label_color)
-        self._blit_text(surf, lbl, (W // 2 - lbl.get_width() // 2, 63))
+        # Lives Mini Ships
+        for i in range(player.lives):
+            lx = 42 + i * 34
+            ly = 68
+            surf.blit(player.mini_image, (lx, ly))
 
-        # ── Wave info (right) ─────────────────────────────────────────────
-        self._wave_bar.rect.topleft = (W - 360, 72)
+        # ── Center Console: Score Odometer ─────────────────────────────────
+        sc_lbl = a.render('tiny', "COMBAT SCORE", RETRO_CREAM)
+        surf.blit(sc_lbl, (W // 2 - sc_lbl.get_width() // 2, 22))
+        
+        sc_val = a.render('mono_lg', f"{player.score:08d}", RETRO_AMBER)
+        surf.blit(sc_val, (W // 2 - sc_val.get_width() // 2, 42))
+
+        # ── Right Console: Tactical Radar & Waves ──────────────────────────
         mode = getattr(wave_mgr, 'mode', 'campaign')
         if mode == 'endless':
-            sec_txt = a.render('small', f"ENDLESS TIER {wave_mgr.display_sector()}", label_color)
+            sec_str = f"TIER {wave_mgr.display_sector()}"
+            wav_str = f"WAVE {wave_mgr.display_wave()}"
         elif mode == 'boss_rush':
-            sec_txt = a.render('small', f"BOSS {wave_mgr.display_sector()} / {TOTAL_SECTORS}", label_color)
+            sec_str = f"BOSS {wave_mgr.display_sector()} / {TOTAL_SECTORS}"
+            wav_str = "ARENA"
         elif mode == 'survival':
-            sec_txt = a.render('small', f"SURVIVAL TIER {wave_mgr.display_sector()}", label_color)
+            sec_str = f"SURVIVAL TIER {wave_mgr.display_sector()}"
+            wav_str = f"TIME {wave_mgr.display_time()}"
         elif mode == 'time_attack':
-            sec_txt = a.render('small', f"TIME ATTACK TIER {wave_mgr.display_sector()}", label_color)
+            sec_str = f"TIME ATTACK"
+            wav_str = f"REMAINING {wave_mgr.display_time()}"
         else:
-            sec_txt = a.render('small', f"SECTOR {wave_mgr.display_sector()} / {TOTAL_SECTORS}", label_color)
-        if mode == 'survival':
-            wav_txt = a.render('small', f"TIME {wave_mgr.display_time()}", WHITE)
-        elif mode == 'time_attack':
-            wav_txt = a.render('small', f"LEFT {wave_mgr.display_time()}", WHITE)
-        elif mode == 'boss_rush':
-            wav_txt = a.render('small', "BOSS RUSH", WHITE)
-        else:
-            wav_txt = a.render('small', f"WAVE {wave_mgr.display_wave()}", WHITE)
-        self._blit_text(surf, sec_txt, (W - 345, 18))
-        self._blit_text(surf, wav_txt, (W - 345, 43))
+            sec_str = f"SECTOR {wave_mgr.display_sector()} / {TOTAL_SECTORS}"
+            wav_str = f"WAVE {wave_mgr.display_wave()}"
+
+        r_lbl = a.render('tiny', sec_str, RETRO_CREAM)
+        r_val = a.render('small', wav_str, WHITE)
+        surf.blit(r_lbl, (W - 470, 23))
+        surf.blit(r_val, (W - 170 - r_val.get_width(), 21))
+
         self._wave_bar.draw(surf, wave_mgr.wave_progress())
 
-        # ── Lives (bottom-left drawn by player) ───────────────────────────
-        lives_lbl = a.render('small', "LIVES", WHITE)
-        self._blit_text(surf, lives_lbl, (20, H - 102))
+        # ── Floating Kill Metrics ──────────────────────────────────────────
+        for text, fx, fy, life, max_life, col in self._floaters:
+            alpha = int(255 * (life / max_life))
+            f_surf = a.render('medium', text, col)
+            f_surf.set_alpha(alpha)
+            surf.blit(f_surf, (int(fx), int(fy)))
 
-        # ── Kill floaters ─────────────────────────────────────────────────
-        for f in self._floaters:
-            text, x, y, life, max_life = f
-            alpha = int(255 * life / max_life)
-            t     = a.render('small', text, YELLOW)
-            t.set_alpha(alpha)
-            self._blit_text(surf, t, (x, y), shadow=(20, 12, 0))
+        # ── Toast Notification Pill ────────────────────────────────────────
+        if self._toast_life > 0:
+            t_alpha = min(255, int(510 * min(self._toast_life, self._toast_max - self._toast_life) / self._toast_max))
+            t_text = a.render('small', self._toast_text, RETRO_AMBER)
+            
+            pw = t_text.get_width() + 44
+            ph = 42
+            px = W // 2 - pw // 2
+            py = H - 80
 
-        # ── Toast notification ────────────────────────────────────────────
-        if self._toast_life > 0 and self._toast_text:
-            t_alpha = min(255, int(255 * self._toast_life / max(1, self._toast_max)))
-            t_surf  = a.render('medium', self._toast_text, WHITE)
-            tw, th  = t_surf.get_size()
-            pad     = 14
-            pill    = pygame.Surface((tw + pad * 2, th + pad), pygame.SRCALPHA)
-            pill.fill((0, 0, 0, 0))
-            pygame.draw.rect(pill, (20, 30, 60, 200), pill.get_rect(), border_radius=10)
-            pygame.draw.rect(pill, (80, 160, 255, 220), pill.get_rect(), 2, border_radius=10)
-            pill.set_alpha(t_alpha)
-            t_surf.set_alpha(t_alpha)
-            px = W // 2 - pill.get_width() // 2
-            py = H - 56
+            pill = pygame.Surface((pw, ph), pygame.SRCALPHA)
+            pygame.draw.rect(pill, (24, 30, 32, t_alpha), (0, 0, pw, ph), border_radius=ph // 2)
+            pygame.draw.rect(pill, (*RETRO_AMBER, t_alpha), (0, 0, pw, ph), 2, border_radius=ph // 2)
+            
+            t_text.set_alpha(t_alpha)
+            pill.blit(t_text, (22, ph // 2 - t_text.get_height() // 2))
             surf.blit(pill, (px, py))
-            surf.blit(t_surf, (px + pad, py + pad // 2))
 
-    def draw_boss_bar(self, surf, boss):
-        boss.draw_healthbar(surf)
+    def draw_boss_bar(self, surf, boss, offset_y=0):
+        boss.draw_healthbar(surf, offset_y=offset_y)
 
     def draw_wave_banner(self, surf, sector, wave, timer, max_timer, mode='campaign'):
-        """Flash a wave announcement banner"""
-        a     = Assets()
+        """Flash warm retro wave announcement banner."""
+        a = Assets()
         alpha = min(255, int(510 * min(timer, max_timer - timer) / max_timer))
-        panel = pygame.Surface((600, 120), pygame.SRCALPHA)
-        panel.fill((10, 15, 35, 200))
-        pygame.draw.rect(panel, (*CYAN, alpha), (0, 0, 600, 120), 2, border_radius=12)
-        surf.blit(panel, (W // 2 - 300, H // 2 - 60))
-        title = "BOSS RUSH" if mode == 'boss_rush' else f"WAVE  {wave}"
+        
+        panel = pygame.Surface((620, 120), pygame.SRCALPHA)
+        panel.fill((22, 28, 30, int(alpha * 0.92)))
+        pygame.draw.rect(panel, (*RETRO_AMBER, alpha), (0, 0, 620, 120), 2, border_radius=10)
+        
+        title = "BOSS CLASH" if mode == 'boss_rush' else f"WAVE  {wave}"
         t1 = a.render('huge', title, WHITE)
-        if mode in ('endless', 'survival', 'time_attack'):
-            label = "TIER"
-        elif mode == 'boss_rush':
-            label = "BOSS"
-        else:
-            label = "SECTOR"
-        t2 = a.render('medium', f"{label}  {sector}", GREY)
+        t2 = a.render('medium', f"SECTOR  {sector}", RETRO_CREAM)
+        
         t1.set_alpha(alpha)
         t2.set_alpha(alpha)
-        surf.blit(t1, (W // 2 - t1.get_width() // 2, H // 2 - 50))
-        surf.blit(t2, (W // 2 - t2.get_width() // 2, H // 2 + 20))
+        panel.blit(t1, (310 - t1.get_width() // 2, 20))
+        panel.blit(t2, (310 - t2.get_width() // 2, 75))
+        
+        surf.blit(panel, (W // 2 - 310, H // 2 - 60))

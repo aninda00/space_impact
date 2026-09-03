@@ -1,0 +1,133 @@
+"""
+systems/codex.py
+----------------
+Codex & Lore Database for Space Impact — Remastered.
+Stores tactical profiles, stat breakdowns, threat levels, and lore entries for all
+enemies, bosses, player ships, and shipyard components.
+"""
+
+ENEMY_CODEX = {
+    'scout': {
+        'name': 'Scout Fighter',
+        'category': 'Fighter',
+        'threat': 'LOW',
+        'hp': 15,
+        'speed': 'Fast (1.8x)',
+        'score': 50,
+        'desc': 'Light reconnaissance craft. Flies in fast wave formations to probe pilot defenses.',
+        'tactics': 'Easily taken down with primary laser fire before they form up.',
+    },
+    'fighter': {
+        'name': 'Standard Fighter',
+        'category': 'Fighter',
+        'threat': 'MEDIUM',
+        'hp': 35,
+        'speed': 'Normal (1.0x)',
+        'score': 100,
+        'desc': 'The core front-line combat unit of the invader fleet. Equipped with single-pulse lasers.',
+        'tactics': 'Dodge their straightforward single-laser bursts while maintaining constant fire.',
+    },
+    'bomber': {
+        'name': 'Heavy Bomber',
+        'category': 'Heavy',
+        'threat': 'HIGH',
+        'hp': 80,
+        'speed': 'Slow (0.65x)',
+        'score': 250,
+        'desc': 'Armored gunship capable of firing 3-way plasma spreads.',
+        'tactics': 'Focus fire early to avoid being trapped by their wide plasma bullet curtains.',
+    },
+    'elite': {
+        'name': 'Elite Interceptor',
+        'category': 'Elite',
+        'threat': 'HIGH',
+        'hp': 55,
+        'speed': 'Agile (1.3x)',
+        'score': 200,
+        'desc': 'High-mobility skirmisher equipped with rapid 3-round burst lasers.',
+        'tactics': 'Anticipate their sudden vertical dashes before they unleash burst fire.',
+    },
+    'interceptor': {
+        'name': 'Twin Interceptor',
+        'category': 'Interceptor',
+        'threat': 'HIGH',
+        'hp': 70,
+        'speed': 'Fast (1.7x)',
+        'score': 320,
+        'desc': 'Swift strike ship firing dual parallel laser cannons.',
+        'tactics': 'Thread between their dual laser streams or clear them with seeking missiles.',
+    },
+    'bulwark': {
+        'name': 'Bulwark Tank',
+        'category': 'Heavy',
+        'threat': 'VERY HIGH',
+        'hp': 155,
+        'speed': 'Slow (0.52x)',
+        'score': 520,
+        'desc': 'Heavy dreadnaught hull that fires dense wall salvos.',
+        'tactics': 'Use piercing rounds or seeker missiles to bypass their front hull plate.',
+    },
+    'wraith': {
+        'name': 'Wraith Phase Fighter',
+        'category': 'Stealth',
+        'threat': 'EXTREME',
+        'hp': 95,
+        'speed': 'Agile (1.45x)',
+        'score': 440,
+        'desc': 'Stealth fighter using phase-shift fields to weave across diagonal vectors.',
+        'tactics': 'Keep distance and fire wide double or triple shot spreads to catch phase-shifts.',
+    },
+}
+
+BOSS_CODEX = {
+    'vanguard': {
+        'name': 'VANGUARD COMMAND SHIP',
+        'sector': 'Sector 1 — Outer Belt',
+        'threat': 'BOSS',
+        'hp': 2200,
+        'shield': 1200,
+        'score': 2000,
+        'desc': 'The advance warship leading the asteroid belt invasion.',
+        'tactics': 'Phase 1 fires targeted laser volleys. Phase 2 unleashes spiraling plasma salvos.',
+    },
+    'phantom': {
+        'name': 'PHANTOM STEALTH TITAN',
+        'sector': 'Sector 2 — Phantom Nebula',
+        'threat': 'BOSS',
+        'hp': 3400,
+        'shield': 1800,
+        'score': 3500,
+        'desc': 'Cloaked command vessel that phase-shifts across space-time.',
+        'tactics': 'Watch the nebula shimmer before it reappears. Fire seeking missiles into its eye core.',
+    },
+    'leviathan': {
+        'name': 'LEVIATHAN DREADNAUGHT',
+        'sector': 'Sector 3 — Iron Corridor',
+        'threat': 'BOSS',
+        'hp': 4800,
+        'shield': 2500,
+        'score': 5500,
+        'desc': 'Moon-sized fortress armed with circular pulse batteries.',
+        'tactics': 'Dodge the outer ring bursts and concentrate fire on the glowing engine power cells.',
+    },
+    'nemesis': {
+        'name': 'NEMESIS HIVE-MIND',
+        'sector': 'Sector 4 — Swarm Zone',
+        'threat': 'BOSS',
+        'hp': 6500,
+        'shield': 3200,
+        'score': 8000,
+        'desc': 'Bio-mechanical central brain coordinating the entire swarm fleet.',
+        'tactics': 'Eliminate its escort drones quickly before it unleashes its full 360-degree storm.',
+    },
+    'overlord': {
+        'name': 'THE OVERLORD flagship',
+        'sector': 'Sector 5 — The Core',
+        'threat': 'FINAL BOSS',
+        'hp': 9000,
+        'shield': 4500,
+        'score': 15000,
+        'desc': 'Supreme alien flagship equipped with hyper-density plasma emitters.',
+        'tactics': 'Utilize all upgraded weapons, shield regeneration, and camera shake maneuvers to survive.',
+    },
+}

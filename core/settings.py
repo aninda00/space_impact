@@ -1,28 +1,35 @@
 W, H = 1920, 1080
 FPS  = 60
 
-# ── Colors ────────────────────────────────────────────────────────────────
-BG       = (5,   8,  20)
-DARK     = (12,  16,  30)
-PANEL    = (18,  22,  42)
-BORDER   = (38,  50,  85)
+# ── Retro Color Palette (#dfa05d, #ac5045, #658761, #dcc9a9, #b83a2d, #4e6851) ──
+RETRO_AMBER   = (223, 160, 93)   # #dfa05d - Warm Amber / Ochre Gold
+RETRO_TERRA   = (172, 80,  69)   # #ac5045 - Terracotta / Burnt Sienna
+RETRO_SAGE    = (101, 135, 97)   # #658761 - Sage Olive Green
+RETRO_CREAM   = (220, 201, 169)  # #dcc9a9 - Warm Parchment / Cream
+RETRO_CRIMSON = (184, 58,  45)   # #b83a2d - Retro Crimson Rust
+RETRO_MOSS    = (78,  104, 81)   # #4e6851 - Deep Forest Moss
 
-WHITE    = (255, 255, 255)
-GREY     = (185, 190, 210)
-DGREY    = (55,  60,  82)
+BG       = (16,  20,  22)        # Deep charcoal slate
+DARK     = (24,  30,  32)
+PANEL    = (30,  38,  40)
+BORDER   = (78,  104, 81)
 
-BLUE     = (55,  155, 255)
-BLUE_D   = (22,  70,  140)
-GREEN    = (50,  230, 130)
-GREEN_D  = (22,  110,  60)
-RED      = (255,  55,  55)
-RED_D    = (130,  25,  25)
-YELLOW   = (255, 200,  40)
-ORANGE   = (255, 130,  40)
-PURPLE   = (170,  60, 255)
-CYAN     = (40,  215, 240)
-PINK     = (255,  80, 180)
-GOLD     = (255, 185,  0)
+WHITE    = (238, 230, 215)       # Soft warm white
+GREY     = (180, 172, 155)       # Muted stone
+DGREY    = (50,  60,  58)
+
+BLUE     = (101, 135, 97)        # Sage
+BLUE_D   = (78,  104, 81)        # Moss
+GREEN    = (101, 135, 97)        # Sage Green
+GREEN_D  = (78,  104, 81)        # Moss Dark
+RED      = (184, 58,  45)        # Crimson Rust
+RED_D    = (120, 35,  28)
+YELLOW   = (223, 160, 93)        # Amber Gold
+ORANGE   = (172, 80,  69)        # Terracotta
+PURPLE   = (140, 75,  110)
+CYAN     = (223, 160, 93)        # Amber Glow
+PINK     = (172, 80,  69)
+GOLD     = (223, 160, 93)        # Amber Gold
 
 # ── Player ────────────────────────────────────────────────────────────────
 P_LIVES        = 3

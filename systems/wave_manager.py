@@ -4,8 +4,9 @@ from entities.boss import SECTOR_BOSSES
 
 
 class WaveManager:
-    def __init__(self, mode='campaign'):
+    def __init__(self, mode='campaign', difficulty='standard'):
         self.mode        = mode
+        self.difficulty  = difficulty
         self.sector      = 1
         self.wave        = 0
         self.wave_kills  = 0
@@ -24,6 +25,9 @@ class WaveManager:
 
     def set_mode(self, mode):
         self.mode = mode
+
+    def set_difficulty(self, difficulty):
+        self.difficulty = difficulty
 
     def start_sector(self, sector):
         self.sector      = sector
@@ -98,6 +102,7 @@ class WaveManager:
         else:
             self.speed_mult = 1.0 + (self.sector - 1) * 0.24
             self.spawn_rate = max(20, 92 - self.sector * 8 - self.wave * 5)
+        self.spawn_rate = max(12, int(self.spawn_rate * self._difficulty_spawn_rate_mult()))
         self.spawning    = True
         self.state       = 'wave'
 
@@ -175,9 +180,31 @@ class WaveManager:
             self.boss.max_shield = max(0, int(self.boss.max_shield * shield_mult))
             self.boss.shield = min(self.boss.shield, float(self.boss.max_shield))
             self.boss.campaign_tuned = True
+        # Hardcore / Bullet Hell boss HP scaling
+        if self.difficulty in ('hardcore', 'bullet_hell'):
+            self.boss.max_hp = int(self.boss.max_hp * 1.4)
+            self.boss.hp = float(self.boss.max_hp)
         sprites_all.add(self.boss)
         self.boss_active = True
         self.state       = 'boss'
+
+    def spawn_second_boss(self, enemies_group, sprites_all):
+        """Spawn a secondary boss for Double Boss Surge mode."""
+        if self.mode == 'endless' or self.difficulty != 'double_boss':
+            return None
+        # Pick the previous sector's boss as the second boss, or same sector if sector 1
+        sec2 = max(0, self.sector - 2)
+        BossClass2 = SECTOR_BOSSES[sec2]
+        boss2 = BossClass2()
+        # Scale down the secondary boss to 65% HP
+        boss2.max_hp = max(1, int(boss2.max_hp * 0.65))
+        boss2.hp = float(boss2.max_hp)
+        boss2.max_shield = max(0, int(boss2.max_shield * 0.5))
+        boss2.shield = float(boss2.max_shield)
+        # Offset position vertically
+        boss2.rect.y += 160
+        sprites_all.add(boss2)
+        return boss2
 
     def add_time_bonus(self, frames):
         if self.mode != 'time_attack':
@@ -235,7 +262,27 @@ class WaveManager:
     def _spawn(self, enemies_group):
         enemy_id = choose_enemy_id(self._enemy_sector())
         hp_mult = 0.72 if self.mode == 'campaign' else 1.0
-        enemies_group.add(create_enemy(enemy_id, speed_mult=self.speed_mult, hp_mult=hp_mult))
+        speed_m = self.speed_mult
+        # Difficulty multipliers
+        if self.difficulty == 'hardcore':
+            hp_mult *= 1.3
+            speed_m *= 1.15
+        elif self.difficulty == 'bullet_hell':
+            hp_mult *= 1.2
+            speed_m *= 1.25
+        elif self.difficulty == 'double_boss':
+            hp_mult *= 1.15
+        enemies_group.add(create_enemy(enemy_id, speed_mult=speed_m, hp_mult=hp_mult))
+
+    def _difficulty_spawn_rate_mult(self):
+        """Return a multiplier applied to spawn_rate (lower = faster spawns)."""
+        if self.difficulty == 'hardcore':
+            return 0.75
+        elif self.difficulty == 'bullet_hell':
+            return 0.55
+        elif self.difficulty == 'double_boss':
+            return 0.85
+        return 1.0
 
     def _endless_tier(self):
         return min(TOTAL_SECTORS, 1 + max(0, self.wave - 1) // 3)

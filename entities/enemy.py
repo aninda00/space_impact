@@ -262,6 +262,14 @@ class DataEnemy(pygame.sprite.Sprite):
                 EnemyBullet(x, y, vx=-10, vy=0, color=ORANGE),
                 EnemyBullet(x, y + 18, vx=-7, vy=1, color=RED),
             ]
+        if self.spec.bullet_pattern == "ring":
+            bullets = []
+            for angle_deg in range(0, 360, 45):
+                rad = math.radians(angle_deg)
+                vx = math.cos(rad) * 6.5
+                vy = math.sin(rad) * 6.5
+                bullets.append(EnemyBullet(x, y, vx=vx, vy=vy, color=PURPLE))
+            return bullets
         return [EnemyBullet(x, y)]
 
     def hit(self, damage):

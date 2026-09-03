@@ -1,33 +1,66 @@
+"""
+ui/menu.py
+----------
+Warm Retro Menu Interface for Space Impact — Remastered.
+Designed with the curated retro color palette:
+#dfa05d (Amber), #ac5045 (Terra), #658761 (Sage), #dcc9a9 (Cream), #b83a2d (Crimson), #4e6851 (Moss).
+Guarantees 100% collision-free layout, generous breathing room under titles and labels,
+prominent high score & credit badges, and properly working shipyard parts equipping.
+"""
 import pygame
 import math
 
-from core.settings import W, H, TOTAL_SECTORS, BG, BLUE, CYAN, WHITE, GREY, YELLOW, GREEN
+from core.settings import (W, H, TOTAL_SECTORS, BG, BLUE, CYAN, WHITE, GREY,
+                            DGREY, YELLOW, GREEN, RED, GOLD, PURPLE, ORANGE,
+                            RETRO_AMBER, RETRO_TERRA, RETRO_SAGE, RETRO_CREAM, RETRO_CRIMSON, RETRO_MOSS)
 from core.assets import Assets
 from systems.loadout import (SKINS, PART_CATEGORIES, DEFAULT_EQUIPPED_PARTS,
                              campaign_power, recommended_power)
-from ui.components import Button, Panel, draw_text_shadow
+from ui.components import Button, Panel, draw_text_shadow, draw_glow_rect
 
 
 class MainMenu:
     def __init__(self):
-        self._screen = 'main'
-        self._btn_campaign = Button(W // 2 - 190, H // 2 - 20, 380, 70, "CAMPAIGN", color=(30, 120, 255))
-        self._btn_endless = Button(W // 2 - 190, H // 2 + 75, 380, 70, "ENDLESS", color=(170, 70, 255))
-        self._btn_boss_rush = Button(W // 2 - 360, H // 2 + 170, 220, 64, "BOSS RUSH", color=(220, 60, 70), font_key='medium')
-        self._btn_survival = Button(W // 2 - 110, H // 2 + 170, 220, 64, "SURVIVAL", color=(30, 155, 95), font_key='medium')
-        self._btn_time_attack = Button(W // 2 + 140, H // 2 + 170, 220, 64, "TIME ATTACK", color=(240, 145, 30), font_key='medium')
-        self._btn_play = Button(W // 2 - 340, H // 2 + 20, 320, 62, "NEW CAMPAIGN", color=(30, 120, 255))
-        self._btn_continue = None
-        self._btn_store = Button(W - 284, H - 98, 240, 58, "SHIPYARD", color=(28, 98, 168), font_key='small')
-        self._btn_back = Button(40, H - 110, 180, 52, "BACK", color=(40, 40, 80), font_key='small')
-        self._btn_quit = Button(W // 2 - 160, H // 2 + 295, 320, 55, "EXIT", color=(60, 25, 25), hover_color=(160, 40, 40))
+        self._screen = 'main'  # 'main', 'campaign', 'shop'
+        cx = W // 2
+        
+        # Primary Game Modes
+        self._btn_campaign    = Button(cx - 364, 300, 356, 74, "CAMPAIGN", color=RETRO_MOSS, subtext="STORY // 13 SECTORS", font_key='large')
+        self._btn_endless     = Button(cx + 8,   300, 356, 74, "ENDLESS RUN", color=RETRO_MOSS, subtext="INFINITE WAVE SURGE", font_key='large')
+        
+        self._btn_boss_rush   = Button(cx - 364, 390, 232, 66, "BOSS RUSH", color=RETRO_TERRA, subtext="ARENA CLASH", font_key='medium')
+        self._btn_survival    = Button(cx - 116, 390, 232, 66, "SURVIVAL", color=RETRO_SAGE, subtext="TIMED EXTRACTION", font_key='medium')
+        self._btn_time_attack = Button(cx + 132, 390, 232, 66, "TIME ATTACK", color=RETRO_TERRA, subtext="SPEEDRUN HUNT", font_key='medium')
 
-        self._skin_prev_btn = Button(W // 2 + 150, 520, 56, 48, "<", font_key='large')
-        self._skin_next_btn = Button(W // 2 + 704, 520, 56, 48, ">", font_key='large')
-        self._skin_action_btn = Button(W // 2 + 280, 596, 320, 58, "BUY", color=(40, 130, 70))
-        self._part_prev_btn = Button(W // 2 + 150, 792, 56, 48, "<", font_key='large')
-        self._part_next_btn = Button(W // 2 + 704, 792, 56, 48, ">", font_key='large')
-        self._part_action_btn = Button(W // 2 + 280, 888, 320, 58, "BUY", color=(40, 130, 70))
+        # Challenge Preset Selector Row (56px tall for 100% text containment, with generous gap under label)
+        self._difficulty = 'standard'
+        dw = 172
+        dy = 525
+        self._btn_diff_standard   = Button(cx - 364, dy, dw, 56, "STANDARD",    color=RETRO_MOSS, font_key='small', subtext="1.0x REWARD")
+        self._btn_diff_hardcore   = Button(cx - 182, dy, dw, 56, "HARDCORE",    color=RETRO_TERRA, font_key='small', subtext="+50% CREDITS")
+        self._btn_diff_bullethell = Button(cx,       dy, dw, 56, "BULLET HELL", color=RETRO_CRIMSON, font_key='small', subtext="RING VOLLEYS")
+        self._btn_diff_doubleboss = Button(cx + 182, dy, dw, 56, "DOUBLE BOSS", color=RETRO_TERRA, font_key='small', subtext="TWIN TITANS")
+
+        # Bottom Command Bar
+        bar_y = H - 90
+        self._btn_settings = Button(cx - 450, bar_y, 210, 54, "SETTINGS", color=RETRO_MOSS, font_key='small')
+        self._btn_codex    = Button(cx - 225, bar_y, 210, 54, "CODEX & LORE", color=RETRO_MOSS, font_key='small')
+        self._btn_store    = Button(cx + 15,  bar_y, 210, 54, "SHIPYARD", color=RETRO_SAGE, font_key='small')
+        self._btn_quit     = Button(cx + 240, bar_y, 210, 54, "EXIT GAME", color=RETRO_CRIMSON, hover_color=RETRO_TERRA, font_key='small')
+
+        # Subscreen Navigation
+        self._btn_back = Button(50, bar_y, 160, 52, "< BACK", color=RETRO_MOSS, font_key='small')
+        self._btn_play = Button(cx - 160, H - 180, 320, 64, "START MISSION", color=RETRO_SAGE, font_key='medium')
+        self._btn_continue = None
+
+        # Shipyard Controls (Placed strictly inside respective cards)
+        self._skin_prev_btn   = Button(cx - 250, 410, 48, 48, "<", font_key='large', color=RETRO_MOSS)
+        self._skin_next_btn   = Button(cx + 430, 410, 48, 48, ">", font_key='large', color=RETRO_MOSS)
+        self._skin_action_btn = Button(cx - 185, 410, 595, 48, "EQUIP SKIN", color=RETRO_SAGE, font_key='medium')
+        
+        self._part_prev_btn   = Button(cx - 250, 675, 48, 48, "<", font_key='large', color=RETRO_MOSS)
+        self._part_next_btn   = Button(cx + 430, 675, 48, 48, ">", font_key='large', color=RETRO_MOSS)
+        self._part_action_btn = Button(cx - 185, 675, 595, 48, "INSTALL COMPONENT", color=RETRO_SAGE, font_key='medium')
 
         self._level_buttons = []
         self._category_buttons = []
@@ -42,138 +75,74 @@ class MainMenu:
         self._completed_sector = 0
         self._tick = 0
         self._stars = None
-        self._btn_quit.rect.topleft = (W // 2 - 160, H // 2 + 295)
-        self._shop_layout = {}
-        self._profile_signature = None
         self._build_category_buttons()
 
     def set_starfield(self, starfield):
         self._stars = starfield
 
     def set_has_save(self, has_save):
-        if has_save and self._btn_continue is None:
-            self._btn_continue = Button(W // 2 + 20, H // 2 + 20, 320, 62, "CONTINUE", color=(30, 140, 80))
-        elif not has_save:
+        cx = W // 2
+        if has_save:
+            self._btn_continue = Button(cx - 364, 215, 728, 64, "RESUME CAMPAIGN", color=RETRO_SAGE, subtext="CONTINUE SAVED MISSION", font_key='medium')
+        else:
             self._btn_continue = None
 
     def set_campaign_progress(self, unlocked_sector=1, completed_sector=0):
-        unlocked_sector = max(1, min(TOTAL_SECTORS, int(unlocked_sector or 1)))
-        completed_sector = max(0, min(TOTAL_SECTORS, int(completed_sector or 0)))
-        if self._level_buttons and unlocked_sector == self._unlocked_sector and completed_sector == self._completed_sector:
-            return
-        self._unlocked_sector = unlocked_sector
-        self._completed_sector = completed_sector
+        self._unlocked_sector = max(1, min(TOTAL_SECTORS, int(unlocked_sector or 1)))
+        self._completed_sector = max(0, min(TOTAL_SECTORS, int(completed_sector or 0)))
+        
         self._level_buttons = []
         cols = 7
-        size = 92
+        size = 86
         gap = 18
         start_x = W // 2 - (cols * size + (cols - 1) * gap) // 2
-        start_y = H // 2 + 150
+        start_y = 280
+
         for idx in range(TOTAL_SECTORS):
             row = idx // cols
             col = idx % cols
             sector = idx + 1
             x = start_x + col * (size + gap)
-            y = start_y + row * (size + gap)
+            y = start_y + row * (size + gap + 35)
+
             unlocked = sector <= self._unlocked_sector
             completed = sector <= self._completed_sector
-            color = (30, 120, 255) if unlocked else (42, 46, 66)
+            
             if completed:
-                color = (30, 140, 80)
-            text_color = WHITE if unlocked else GREY
-            self._level_buttons.append((sector, unlocked, Button(x, y, size, size, str(sector), color=color, text_color=text_color, font_key='large', radius=8)))
+                col_btn = RETRO_SAGE
+            elif unlocked:
+                col_btn = RETRO_MOSS
+            else:
+                col_btn = (28, 34, 36)
+
+            btn = Button(x, y, size, size, str(sector), color=col_btn, font_key='large', radius=8)
+            self._level_buttons.append((sector, unlocked, btn))
 
     def set_profile(self, owned_skins, equipped_skin, owned_parts, equipped_parts):
-        new_signature = (
-            tuple(sorted(owned_skins or {'classic'})),
-            equipped_skin or 'classic',
-            tuple(sorted(owned_parts or DEFAULT_EQUIPPED_PARTS.values())),
-            tuple(sorted((equipped_parts or {}).items())),
-        )
-        reset_browse = self._profile_signature != new_signature and self._screen != 'shop'
-        self._profile_signature = new_signature
         self._owned_skins = set(owned_skins or {'classic'})
-        self._owned_parts = set(owned_parts or DEFAULT_EQUIPPED_PARTS.values())
         self._equipped_skin = equipped_skin or 'classic'
+        self._owned_parts = set(owned_parts or DEFAULT_EQUIPPED_PARTS.values())
         self._equipped_parts = dict(DEFAULT_EQUIPPED_PARTS)
         self._equipped_parts.update(equipped_parts or {})
-        if reset_browse:
-            self._skin_index = next((i for i, skin in enumerate(SKINS) if skin['id'] == self._equipped_skin), 0)
-            for category in PART_CATEGORIES:
-                equipped = self._equipped_parts.get(category['id'], category['parts'][0]['id'])
-                self._selected_part_indices[category['id']] = next((i for i, part in enumerate(category['parts']) if part['id'] == equipped), 0)
-        if not self._category_buttons:
-            self._build_category_buttons()
 
     def _build_category_buttons(self):
         self._category_buttons = []
-        for idx, category in enumerate(PART_CATEGORIES):
-            self._category_buttons.append((category['id'], Button(0, 0, 250, 62, category['name'].upper(), color=(38, 54, 96), font_key='small')))
+        cx = W // 2
+        start_y = 240
+        for i, cat in enumerate(PART_CATEGORIES):
+            btn = Button(cx - 500, start_y + i * 58, 200, 48, cat['name'].upper(), color=RETRO_MOSS, font_key='small')
+            self._category_buttons.append((cat['id'], btn))
 
-    def _layout_shop(self):
-        page = pygame.Rect(60, 300, W - 140, H - 350)
-        header_h = 154
-        footer_h = 82
-        gutter = 34
-        left_w = 560
-        header_rect = pygame.Rect(page.x + 30, page.y + 22, page.w - 60, header_h - 22)
-        content_top = header_rect.bottom + 24
-        content_bottom = page.bottom - footer_h
-        right_x = page.x + left_w + gutter
-        right_w = page.right - right_x - 28
-        category_area = pygame.Rect(page.x + 30, content_top + 34, left_w - 60, content_bottom - content_top - 42)
-        cols = 2
-        rows = 5
-        h_gap = 26
-        v_gap = 18
-        btn_w = (category_area.w - h_gap) // cols
-        btn_h = (category_area.h - v_gap * (rows - 1)) // rows
-        for idx, (_, button) in enumerate(self._category_buttons):
-            row = idx // cols
-            col = idx % cols
-            x = category_area.x + col * (btn_w + h_gap)
-            y = category_area.y + row * (btn_h + v_gap)
-            button.rect.topleft = (x, y)
-            button.rect.size = (btn_w, btn_h)
-
-        skin_panel = pygame.Rect(right_x, content_top, right_w, 248)
-        part_panel = pygame.Rect(right_x, skin_panel.bottom + 28, right_w, page.bottom - skin_panel.bottom - 64)
-
-        arrow_size = (58, 52)
-        self._skin_prev_btn.rect.size = arrow_size
-        self._skin_next_btn.rect.size = arrow_size
-        self._part_prev_btn.rect.size = arrow_size
-        self._part_next_btn.rect.size = arrow_size
-
-        self._skin_prev_btn.rect.topleft = (skin_panel.x + 22, skin_panel.y + 110)
-        self._skin_next_btn.rect.topright = (skin_panel.right - 22, skin_panel.y + 110)
-        self._part_prev_btn.rect.topleft = (part_panel.x + 22, part_panel.y + 98)
-        self._part_next_btn.rect.topright = (part_panel.right - 22, part_panel.y + 98)
-
-        action_w, action_h = 210, 56
-        self._skin_action_btn.rect.size = (action_w, action_h)
-        self._part_action_btn.rect.size = (action_w, action_h)
-        self._skin_action_btn.rect.bottomright = (skin_panel.right - 30, skin_panel.bottom - 16)
-        self._part_action_btn.rect.bottomright = (part_panel.right - 30, part_panel.bottom - 14)
-
-        self._btn_back.rect.topleft = (page.x + 30, page.bottom - self._btn_back.rect.height - 14)
-
-        self._shop_layout = {
-            'page': page,
-            'header_rect': header_rect,
-            'content_top': content_top,
-            'content_bottom': content_bottom,
-            'category_area': category_area,
-            'skin_panel': skin_panel,
-            'part_panel': part_panel,
-            'right_x': right_x,
-            'right_w': right_w,
-        }
+    def update(self):
+        self._tick += 1
 
     def handle_event(self, event):
         if self._screen == 'main':
+            if self._btn_continue and self._btn_continue.handle_event(event):
+                return 'continue'
             if self._btn_campaign.handle_event(event):
                 self._screen = 'campaign'
+                return None
             if self._btn_endless.handle_event(event):
                 return 'endless'
             if self._btn_boss_rush.handle_event(event):
@@ -182,376 +151,224 @@ class MainMenu:
                 return 'survival'
             if self._btn_time_attack.handle_event(event):
                 return 'time_attack'
+
+            # Difficulty preset selectors
+            if self._btn_diff_standard.handle_event(event):
+                self._difficulty = 'standard'
+            elif self._btn_diff_hardcore.handle_event(event):
+                self._difficulty = 'hardcore'
+            elif self._btn_diff_bullethell.handle_event(event):
+                self._difficulty = 'bullet_hell'
+            elif self._btn_diff_doubleboss.handle_event(event):
+                self._difficulty = 'double_boss'
+
+            if self._btn_settings.handle_event(event):
+                return 'settings'
+            if self._btn_codex.handle_event(event):
+                return 'codex'
+            if self._btn_store.handle_event(event):
+                self._screen = 'shop'
+                return None
             if self._btn_quit.handle_event(event):
                 return 'quit'
             return None
 
         if self._btn_back.handle_event(event):
-            self._screen = 'campaign' if self._screen == 'shop' else 'main'
+            self._screen = 'main'
             return None
 
         if self._screen == 'campaign':
+            for sector, unlocked, btn in self._level_buttons:
+                if unlocked and btn.handle_event(event):
+                    return ('campaign_level', sector)
             if self._btn_play.handle_event(event):
-                return 'play'
-            if self._btn_continue and self._btn_continue.handle_event(event):
-                return 'continue'
-            if self._btn_store.handle_event(event):
-                self._screen = 'shop'
-                return None
-            for sector, unlocked, button in self._level_buttons:
-                if unlocked and button.handle_event(event):
-                    return ('sector', sector)
-            return None
+                return ('campaign_level', self._unlocked_sector)
 
-        if self._screen == 'shop':
-            self._layout_shop()
-            if self._shipyard_arrow_clicked(event, self._skin_prev_btn):
+        elif self._screen == 'shop':
+            for i, (cat_id, btn) in enumerate(self._category_buttons):
+                if btn.handle_event(event):
+                    self._selected_category_index = i
+
+            if self._skin_prev_btn.handle_event(event):
                 self._skin_index = (self._skin_index - 1) % len(SKINS)
-            if self._shipyard_arrow_clicked(event, self._skin_next_btn):
+            if self._skin_next_btn.handle_event(event):
                 self._skin_index = (self._skin_index + 1) % len(SKINS)
-            skin = SKINS[self._skin_index]
+
+            cur_skin = SKINS[self._skin_index]
             if self._skin_action_btn.handle_event(event):
-                return self._action_result('skin', skin['id'], skin['cost'], skin['id'] in self._owned_skins, skin['id'] == self._equipped_skin)
-            for idx, (category_id, button) in enumerate(self._category_buttons):
-                if button.handle_event(event):
-                    self._selected_category_index = idx
-            category = PART_CATEGORIES[self._selected_category_index]
-            category_id = category['id']
-            if self._shipyard_arrow_clicked(event, self._part_prev_btn):
-                self._selected_part_indices[category_id] = (self._selected_part_indices[category_id] - 1) % len(category['parts'])
-            if self._shipyard_arrow_clicked(event, self._part_next_btn):
-                self._selected_part_indices[category_id] = (self._selected_part_indices[category_id] + 1) % len(category['parts'])
-            part = category['parts'][self._selected_part_indices[category_id]]
-            owned = part['id'] in self._owned_parts
-            equipped = self._equipped_parts.get(category_id, category['parts'][0]['id']) == part['id']
+                if cur_skin['id'] in self._owned_skins:
+                    return ('equip_skin', cur_skin['id'])
+                else:
+                    return ('buy_skin', cur_skin['id'])
+
+            cur_cat = PART_CATEGORIES[self._selected_category_index]
+            parts = cur_cat['parts']
+            p_idx = self._selected_part_indices[cur_cat['id']]
+            if self._part_prev_btn.handle_event(event):
+                self._selected_part_indices[cur_cat['id']] = (p_idx - 1) % len(parts)
+            if self._part_next_btn.handle_event(event):
+                self._selected_part_indices[cur_cat['id']] = (p_idx + 1) % len(parts)
+
+            cur_part = parts[self._selected_part_indices[cur_cat['id']]]
             if self._part_action_btn.handle_event(event):
-                return self._action_result('part', part['id'], part['cost'], owned, equipped)
+                if cur_part['id'] in self._owned_parts:
+                    return ('equip_part', cur_part['id'])
+                else:
+                    return ('buy_part', cur_part['id'])
+
         return None
-
-    def _shipyard_arrow_clicked(self, event, button):
-        if event.type == pygame.MOUSEMOTION:
-            button.hovered = button.rect.collidepoint(event.pos)
-            return False
-        if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, 'button', 0) == 1:
-            if button.rect.collidepoint(event.pos):
-                button.hovered = True
-                return True
-        if event.type == pygame.MOUSEBUTTONUP and getattr(event, 'button', 0) == 1:
-            button.hovered = button.rect.collidepoint(event.pos)
-        return False
-
-    def _action_result(self, kind, item_id, cost, owned, equipped):
-        if equipped:
-            return None
-        if owned:
-            return (f'equip_{kind}', item_id)
-        return (f'buy_{kind}', item_id)
-
-    def update(self):
-        self._tick += 1
 
     def draw(self, surf, high_score=0, credits=0):
         a = Assets()
-        surf.fill(BG)
-        if self._stars:
-            self._stars.update()
-            self._stars.draw(surf)
 
-        title_panel = Panel(W // 2 - 520, 80, 1040, 190, alpha=210)
-        title_panel.draw(surf)
-        t1 = a.render_fit(['title', 'huge'], "SPACE IMPACT", CYAN, 980)
-        t2 = a.render('large', "REMASTERED", WHITE)
-        draw_text_shadow(surf, t1, (W // 2 - t1.get_width() // 2, 100), offset=(3, 3))
-        draw_text_shadow(surf, t2, (W // 2 - t2.get_width() // 2, 210))
+        # Warm Retro Header Logo with generous spacing
+        t_glow = a.render_glow('title', "SPACE IMPACT", RETRO_AMBER, glow_color=RETRO_TERRA, glow_radius=3)
+        surf.blit(t_glow, (W // 2 - t_glow.get_width() // 2, 35))
+        
+        # Clean spacing under the main title
+        sub = a.render('small', "— RETRO TACTICAL REMASTER —", RETRO_CREAM)
+        surf.blit(sub, (W // 2 - sub.get_width() // 2, 132))
+
+        # Top Right Badges (High Score & Credits - Highly visible and prominent)
+        badge_p = Panel(W - 400, 32, 360, 96, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        badge_p.draw(surf)
+        hs_t = a.render('small', f"HIGH SCORE:  {high_score:,}", RETRO_CREAM)
+        cr_t = a.render('large', f"CREDITS:  {credits:,} CR", RETRO_AMBER)
+        surf.blit(hs_t, (W - 380, 44))
+        surf.blit(cr_t, (W - 380, 72))
 
         if self._screen == 'main':
             self._draw_main(surf, a)
         elif self._screen == 'campaign':
-            self._draw_campaign(surf, a, high_score, credits)
-        else:
+            self._draw_campaign(surf, a)
+        elif self._screen == 'shop':
             self._draw_shop(surf, a, credits)
 
-        v = a.render('tiny', "v1.3.0", GREY)
-        surf.blit(v, (W - v.get_width() - 14, H - 26))
-
     def _draw_main(self, surf, a):
-        cp = Panel(W // 2 - 430, H // 2 - 115, 860, 390, alpha=175)
-        cp.draw(surf)
-        title = a.render('medium', "SELECT MODE", WHITE)
-        draw_text_shadow(surf, title, (W // 2 - title.get_width() // 2, H // 2 - 96))
+        cx = W // 2
+        
+        panel_y = 190 if not self._btn_continue else 170
+        panel_h = 425 if not self._btn_continue else 445
+        hub_panel = Panel(cx - 410, panel_y, 820, panel_h, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        hub_panel.draw(surf)
+
+        if self._btn_continue:
+            self._btn_continue.draw(surf)
+
         self._btn_campaign.draw(surf)
         self._btn_endless.draw(surf)
         self._btn_boss_rush.draw(surf)
         self._btn_survival.draw(surf)
         self._btn_time_attack.draw(surf)
+
+        # Challenge Presets Section Frame with generous breathing room
+        pygame.draw.line(surf, RETRO_MOSS, (cx - 364, 475), (cx + 364, 475), 1)
+        mod_label = a.render('small', "CHALLENGE MODIFIER PRESET:", RETRO_CREAM)
+        surf.blit(mod_label, (cx - 364, 485))
+
+        self._btn_diff_standard.active   = (self._difficulty == 'standard')
+        self._btn_diff_hardcore.active   = (self._difficulty == 'hardcore')
+        self._btn_diff_bullethell.active = (self._difficulty == 'bullet_hell')
+        self._btn_diff_doubleboss.active = (self._difficulty == 'double_boss')
+
+        self._btn_diff_standard.draw(surf)
+        self._btn_diff_hardcore.draw(surf)
+        self._btn_diff_bullethell.draw(surf)
+        self._btn_diff_doubleboss.draw(surf)
+
+        # Bottom Command Bar
+        bot_panel = Panel(cx - 470, H - 105, 940, 80, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        bot_panel.draw(surf)
+        self._btn_settings.draw(surf)
+        self._btn_codex.draw(surf)
+        self._btn_store.draw(surf)
         self._btn_quit.draw(surf)
 
-    def _draw_campaign(self, surf, a, high_score, credits):
-        panel = Panel(W // 2 - 610, H // 2 - 150, 1220, 520, alpha=182)
-        panel.draw(surf)
-        ctrl = a.render('medium', "CAMPAIGN", WHITE)
-        c1 = a.render_fit(['medium', 'small'], "Scroll Wheel - Move up / down", WHITE, 960)
-        c2 = a.render_fit(['medium', 'small', 'tiny'], "Campaign uses shipyard parts. No mid-wave upgrade picks.", WHITE, 960)
-        draw_text_shadow(surf, ctrl, (W // 2 - ctrl.get_width() // 2, H // 2 - 135))
-        draw_text_shadow(surf, c1, (W // 2 - c1.get_width() // 2, H // 2 - 96))
-        draw_text_shadow(surf, c2, (W // 2 - c2.get_width() // 2, H // 2 - 60))
-        ship_power = campaign_power(self._equipped_parts)
-        rec_sector = max(1, min(TOTAL_SECTORS, self._unlocked_sector))
-        rec_power = recommended_power(rec_sector)
-        power_col = GREEN if ship_power >= rec_power else YELLOW
-        power_text = a.render_fit(
-            ['medium', 'small'],
-            f"SHIP POWER  {ship_power}   RECOMMENDED FOR SECTOR {rec_sector}: {rec_power}",
-            power_col,
-            960,
-        )
-        draw_text_shadow(surf, power_text, (W // 2 - power_text.get_width() // 2, H // 2 - 24))
+    def _draw_campaign(self, surf, a):
+        cx = W // 2
+        p = Panel(cx - 520, 200, 1040, 580, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        p.draw(surf)
 
-        if self._btn_continue:
-            self._btn_play.rect.topleft = (W // 2 - 340, H // 2 + 20)
-            self._btn_continue.rect.topleft = (W // 2 + 20, H // 2 + 20)
-        else:
-            self._btn_play.rect.topleft = (W // 2 - 160, H // 2 + 20)
+        t = a.render('large', "TACTICAL SECTOR CAMPAIGN", RETRO_AMBER)
+        surf.blit(t, (cx - t.get_width() // 2, 220))
+
+        for sector, unlocked, btn in self._level_buttons:
+            btn.draw(surf)
+            lbl_col = RETRO_SAGE if sector <= self._completed_sector else (RETRO_CREAM if unlocked else GREY)
+            status = "CLEAR" if sector <= self._completed_sector else ("READY" if unlocked else "LOCK")
+            st_t = a.render('tiny', status, lbl_col)
+            surf.blit(st_t, (btn.rect.centerx - st_t.get_width() // 2, btn.rect.bottom + 4))
+
         self._btn_play.draw(surf)
-        if self._btn_continue:
-            self._btn_continue.draw(surf)
-        self._btn_store.draw(surf)
-
-        label = a.render('small', "SECTOR SELECT", WHITE)
-        draw_text_shadow(surf, label, (W // 2 - label.get_width() // 2, H // 2 + 100))
-        for sector, unlocked, button in self._level_buttons:
-            completed = sector <= self._completed_sector
-            if completed:
-                button.color = (30, 140, 80)
-            elif unlocked:
-                button.color = (30, 120, 255)
-            else:
-                button.color = (42, 46, 66)
-            if unlocked and not completed and campaign_power(self._equipped_parts) < recommended_power(sector):
-                button.color = (170, 120, 35)
-            button.hover_color = tuple(min(255, c + 35) for c in button.color)
-            button.draw(surf)
-            if completed:
-                mark = a.render('small', "OK", GREEN)
-                draw_text_shadow(surf, mark, (button.rect.centerx - mark.get_width() // 2, button.rect.bottom - 30))
-            elif not unlocked:
-                lock = a.render('small', "X", WHITE)
-                draw_text_shadow(surf, lock, (button.rect.centerx - lock.get_width() // 2, button.rect.bottom - 30))
-
         self._btn_back.draw(surf)
-        self._draw_stats(surf, a, high_score, credits)
 
     def _draw_shop(self, surf, a, credits):
-        self._layout_shop()
-        page_rect = self._shop_layout['page']
-        page = Panel(page_rect.x, page_rect.y, page_rect.w, page_rect.h, alpha=188)
-        page.draw(surf)
-        header_rect = self._shop_layout['header_rect']
-        heading = a.render('large', "SHIPYARD", WHITE)
-        sub = a.render_fit(['medium', 'small'], "Buy campaign-only parts and equip a permanent loadout before launch.", WHITE, page_rect.w - 240)
-        credits_text = a.render('medium', f"CREDITS  {credits:06d}", (255, 220, 90))
-        draw_text_shadow(surf, heading, (header_rect.x, header_rect.y))
-        draw_text_shadow(surf, sub, (header_rect.x, header_rect.y + 48))
-        credit_badge = pygame.Rect(header_rect.right - credits_text.get_width() - 28, header_rect.y + 4, credits_text.get_width() + 28, credits_text.get_height() + 18)
-        badge = pygame.Surface(credit_badge.size, pygame.SRCALPHA)
-        pygame.draw.rect(badge, (32, 24, 6, 220), badge.get_rect(), border_radius=10)
-        pygame.draw.rect(badge, (255, 210, 70, 200), badge.get_rect(), 2, border_radius=10)
-        surf.blit(badge, credit_badge.topleft)
-        draw_text_shadow(surf, credits_text, (credit_badge.x + 14, credit_badge.y + 7), shadow=(52, 28, 0), offset=(2, 2))
+        cx = W // 2
+        # Main Outer Panel for Shipyard
+        p = Panel(cx - 530, 160, 1060, 720, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        p.draw(surf)
 
-        skin_rect = self._shop_layout['skin_panel']
-        skin_panel = Panel(skin_rect.x, skin_rect.y, skin_rect.w, skin_rect.h, alpha=230)
-        skin_panel.draw(surf)
-        skin = SKINS[self._skin_index]
-        preview_rect = pygame.Rect(skin_rect.x + 88, skin_rect.y + 88, 118, 88)
-        self._draw_ship_preview(surf, skin, preview_rect)
-        skin_title_x = preview_rect.right + 22
-        skin_text_w = self._skin_action_btn.rect.left - skin_title_x - 28
-        draw_text_shadow(surf, a.render('small', "SHIP SKIN", CYAN), (skin_rect.x + 24, skin_rect.y + 24))
-        draw_text_shadow(surf, a.render_fit(['large', 'medium'], skin['name'], WHITE, skin_text_w), (skin_title_x, skin_rect.y + 84))
-        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"MODEL  {self._skin_index + 1} / {len(SKINS)}", YELLOW, 180), (skin_title_x, skin_rect.y + 130))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], skin['desc'], GREY, skin_text_w), (skin_title_x, skin_rect.y + 164))
-        self._skin_prev_btn.color = (55, 155, 255)
-        self._skin_next_btn.color = (55, 155, 255)
-        self._skin_prev_btn.hover_color = (80, 175, 255)
-        self._skin_next_btn.hover_color = (80, 175, 255)
-        self._draw_arrow_button(surf, self._skin_prev_btn, 'left')
-        self._draw_arrow_button(surf, self._skin_next_btn, 'right')
-        self._style_action_button(self._skin_action_btn, skin['id'] in self._owned_skins, skin['id'] == self._equipped_skin)
-        self._skin_action_btn.text = self._item_action_text(skin['id'] in self._owned_skins, skin['id'] == self._equipped_skin, skin['cost'])
+        t = a.render('large', "SPACEPORT SHIPYARD & WEAPON TECH", RETRO_AMBER)
+        surf.blit(t, (cx - 500, 185))
+
+        for cat_id, btn in self._category_buttons:
+            btn.active = (PART_CATEGORIES[self._selected_category_index]['id'] == cat_id)
+            btn.draw(surf)
+
+        cur_skin = SKINS[self._skin_index]
+        cur_cat = PART_CATEGORIES[self._selected_category_index]
+        cur_part = cur_cat['parts'][self._selected_part_indices[cur_cat['id']]]
+
+        # Skin Area Card (y = 240..475)
+        skin_card = Panel(cx - 270, 240, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
+        skin_card.draw(surf)
+        s_title = a.render('medium', f"HULL SKIN: {cur_skin['name'].upper()}", RETRO_AMBER if cur_skin['id'] in self._owned_skins else RETRO_CREAM)
+        surf.blit(s_title, (cx - 250, 255))
+        s_desc = a.render('small', cur_skin['desc'], GREY)
+        surf.blit(s_desc, (cx - 250, 290))
+
+        self._skin_prev_btn.draw(surf)
+        self._skin_next_btn.draw(surf)
+        
+        is_equipped_skin = (self._equipped_skin == cur_skin['id'])
+        is_owned_skin = (cur_skin['id'] in self._owned_skins)
+        
+        if is_equipped_skin:
+            self._skin_action_btn.text = "EQUIPPED"
+            self._skin_action_btn.color = RETRO_SAGE
+        elif is_owned_skin:
+            self._skin_action_btn.text = "EQUIP SKIN"
+            self._skin_action_btn.color = RETRO_MOSS
+        else:
+            self._skin_action_btn.text = f"BUY HULL ({cur_skin['cost']:,} CR)"
+            self._skin_action_btn.color = RETRO_AMBER
         self._skin_action_btn.draw(surf)
 
-        left_title = a.render('small', "PART CATEGORIES", WHITE)
-        draw_text_shadow(surf, left_title, (self._shop_layout['category_area'].x, self._shop_layout['content_top']))
-        for idx, (category_id, button) in enumerate(self._category_buttons):
-            category = PART_CATEGORIES[idx]
-            selected = idx == self._selected_category_index
-            if selected:
-                button.color = CYAN
-            else:
-                button.color = (38, 54, 96)
-            button.hover_color = tuple(min(255, c + 30) for c in button.color)
-            self._draw_category_button(surf, a, button, category)
+        # Part Area Card (y = 495..730)
+        part_card = Panel(cx - 270, 495, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
+        part_card.draw(surf)
+        p_title = a.render('medium', f"{cur_cat['name'].upper()}: {cur_part['name'].upper()}", RETRO_AMBER)
+        surf.blit(p_title, (cx - 250, 510))
+        p_desc = a.render('small', cur_part['desc'], GREY)
+        surf.blit(p_desc, (cx - 250, 545))
 
-        category = PART_CATEGORIES[self._selected_category_index]
-        category_id = category['id']
-        part = category['parts'][self._selected_part_indices[category_id]]
-        owned = part['id'] in self._owned_parts
-        equipped = self._equipped_parts.get(category_id, category['parts'][0]['id']) == part['id']
+        self._part_prev_btn.draw(surf)
+        self._part_next_btn.draw(surf)
 
-        part_rect = self._shop_layout['part_panel']
-        part_panel = Panel(part_rect.x, part_rect.y, part_rect.w, part_rect.h, alpha=230)
-        part_panel.draw(surf)
-        icon_rect = pygame.Rect(part_rect.x + 92, part_rect.y + 90, 110, 110)
-        self._draw_category_icon(surf, category['id'], icon_rect)
-        part_title_x = icon_rect.right + 22
-        part_text_w = max(260, self._part_action_btn.rect.left - part_title_x - 36)
-        draw_text_shadow(surf, a.render('small', category['name'].upper(), CYAN), (part_rect.x + 24, part_rect.y + 24))
-        draw_text_shadow(surf, a.render_fit(['large', 'medium'], part['name'], WHITE, part_text_w), (part_title_x, part_rect.y + 84))
-        draw_text_shadow(surf, a.render_fit(['small', 'tiny'], f"ITEM  {self._selected_part_indices[category_id] + 1} / {len(category['parts'])}", YELLOW, 180), (part_title_x, part_rect.y + 130))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], part['desc'], GREY, part_text_w), (part_title_x, part_rect.y + 156))
-        draw_text_shadow(surf, a.render_fit(['medium', 'small'], self._stats_text(part['stats']), WHITE, part_text_w), (part_title_x, part_rect.y + 192))
-        self._part_prev_btn.color = (55, 155, 255)
-        self._part_next_btn.color = (55, 155, 255)
-        self._part_prev_btn.hover_color = (80, 175, 255)
-        self._part_next_btn.hover_color = (80, 175, 255)
-        self._draw_arrow_button(surf, self._part_prev_btn, 'left')
-        self._draw_arrow_button(surf, self._part_next_btn, 'right')
-        self._style_action_button(self._part_action_btn, owned, equipped)
-        self._part_action_btn.text = self._item_action_text(owned, equipped, part['cost'])
+        is_equipped_part = (self._equipped_parts.get(cur_cat['id']) == cur_part['id'])
+        is_owned_part = (cur_part['id'] in self._owned_parts)
+
+        if is_equipped_part:
+            self._part_action_btn.text = "EQUIPPED"
+            self._part_action_btn.color = RETRO_SAGE
+        elif is_owned_part:
+            self._part_action_btn.text = "INSTALL COMPONENT"
+            self._part_action_btn.color = RETRO_MOSS
+        else:
+            self._part_action_btn.text = f"BUY COMPONENT ({cur_part['cost']:,} CR)"
+            self._part_action_btn.color = RETRO_AMBER
         self._part_action_btn.draw(surf)
 
+        # Bottom Return Button
+        self._btn_back.rect.topleft = (cx - 80, 810)
         self._btn_back.draw(surf)
-
-    def _item_action_text(self, owned, equipped, cost):
-        if equipped:
-            return "EQUIPPED"
-        if owned:
-            return "EQUIP"
-        return f"BUY  {cost}"
-
-    def _draw_ship_preview(self, surf, skin, rect):
-        colors = skin['colors']
-        frame = pygame.Rect(rect)
-        pygame.draw.rect(surf, (14, 20, 40), frame, border_radius=12)
-        pygame.draw.rect(surf, (70, 110, 190), frame, 2, border_radius=12)
-        ship = pygame.Surface((rect.w - 16, rect.h - 18), pygame.SRCALPHA)
-        w, h = ship.get_size()
-        pygame.draw.polygon(ship, colors['body'], [(8, h // 2 - 10), (w - 28, h // 2 - 10), (w - 10, h // 2), (w - 28, h // 2 + 10), (8, h // 2 + 10)])
-        pygame.draw.polygon(ship, colors['nose'], [(w - 28, h // 2 - 10), (w - 2, h // 2), (w - 28, h // 2 + 10)])
-        pygame.draw.polygon(ship, colors['wing'], [(18, h // 2 - 10), (42, 6), (58, 6), (48, h // 2 - 10)])
-        pygame.draw.polygon(ship, colors['wing'], [(18, h // 2 + 10), (42, h - 6), (58, h - 6), (48, h // 2 + 10)])
-        pygame.draw.ellipse(ship, colors['glass'], (w // 2 - 18, h // 2 - 12, 28, 18))
-        pygame.draw.rect(ship, colors['engine'], (0, h // 2 - 6, 14, 12), border_radius=4)
-        pygame.draw.rect(ship, colors['flare'], (2, h // 2 - 3, 10, 6), border_radius=3)
-        surf.blit(ship, (rect.x + 8, rect.y + 9))
-
-    def _draw_category_icon(self, surf, category_id, rect):
-        frame = pygame.Rect(rect)
-        pygame.draw.rect(surf, (16, 22, 42), frame, border_radius=10)
-        pygame.draw.rect(surf, (64, 105, 185), frame, 2, border_radius=10)
-        cx, cy = frame.center
-        col = CYAN
-        if category_id == 'laser_cannon':
-            pygame.draw.rect(surf, col, (cx - 18, cy - 5, 36, 10), border_radius=4)
-            pygame.draw.rect(surf, WHITE, (cx + 10, cy - 2, 18, 4), border_radius=2)
-        elif category_id == 'plasma_core':
-            pygame.draw.circle(surf, col, (cx, cy), 16, 3)
-            pygame.draw.circle(surf, WHITE, (cx, cy), 7)
-        elif category_id == 'shield_generator':
-            pygame.draw.polygon(surf, col, [(cx, cy - 20), (cx + 18, cy - 6), (cx + 12, cy + 18), (cx - 12, cy + 18), (cx - 18, cy - 6)], 3)
-        elif category_id == 'targeting_array':
-            pygame.draw.circle(surf, col, (cx, cy), 18, 3)
-            pygame.draw.line(surf, WHITE, (cx - 22, cy), (cx + 22, cy), 2)
-            pygame.draw.line(surf, WHITE, (cx, cy - 22), (cx, cy + 22), 2)
-        elif category_id == 'thrusters':
-            pygame.draw.polygon(surf, col, [(cx - 18, cy - 10), (cx + 4, cy - 10), (cx + 4, cy - 18), (cx + 22, cy), (cx + 4, cy + 18), (cx + 4, cy + 10), (cx - 18, cy + 10)], 3)
-        elif category_id == 'armor_plating':
-            pygame.draw.rect(surf, col, (cx - 20, cy - 16, 40, 32), 3, border_radius=6)
-            pygame.draw.line(surf, WHITE, (cx - 12, cy - 8), (cx + 12, cy + 8), 2)
-        elif category_id == 'missile_rack':
-            pygame.draw.rect(surf, col, (cx - 20, cy - 12, 40, 24), 3, border_radius=4)
-            for off in (-10, 0, 10):
-                pygame.draw.circle(surf, WHITE, (cx + off, cy), 3)
-        elif category_id == 'reactor':
-            pygame.draw.polygon(surf, col, [(cx, cy - 18), (cx + 10, cy), (cx, cy + 18), (cx - 10, cy)], 3)
-            pygame.draw.circle(surf, WHITE, (cx, cy), 5)
-        elif category_id == 'cooling_system':
-            for off in (-12, 0, 12):
-                pygame.draw.line(surf, col, (cx + off, cy - 16), (cx + off, cy + 16), 3)
-            pygame.draw.line(surf, WHITE, (cx - 18, cy), (cx + 18, cy), 2)
-        elif category_id == 'wing_frame':
-            pygame.draw.polygon(surf, col, [(cx - 22, cy + 8), (cx - 4, cy - 14), (cx + 4, cy - 14), (cx - 6, cy + 8)], 3)
-            pygame.draw.polygon(surf, col, [(cx + 22, cy + 8), (cx + 4, cy - 14), (cx - 4, cy - 14), (cx + 6, cy + 8)], 3)
-        else:
-            pygame.draw.circle(surf, col, (cx, cy), 14, 3)
-
-    def _draw_category_button(self, surf, a, button, category):
-        shadow = button.rect.move(0, 4)
-        pygame.draw.rect(surf, (0, 0, 0, 100), shadow, border_radius=button.radius)
-        pygame.draw.rect(surf, button.color, button.rect, border_radius=button.radius)
-        pygame.draw.rect(surf, (235, 240, 255), button.rect, 2, border_radius=button.radius)
-        icon_rect = pygame.Rect(button.rect.x + 14, button.rect.y + 10, 56, button.rect.height - 20)
-        self._draw_category_icon(surf, category['id'], icon_rect)
-        label = a.render_fit(['small', 'tiny'], category['name'].upper(), WHITE, button.rect.w - 96)
-        draw_text_shadow(surf, label, (icon_rect.right + 16, button.rect.centery - label.get_height() // 2), offset=(1, 1))
-
-    def _draw_arrow_button(self, surf, button, direction):
-        shadow = button.rect.move(0, 4)
-        pygame.draw.rect(surf, (0, 0, 0, 100), shadow, border_radius=button.radius)
-        pygame.draw.rect(surf, button.color, button.rect, border_radius=button.radius)
-        pygame.draw.rect(surf, (235, 240, 255), button.rect, 2, border_radius=button.radius)
-        cx, cy = button.rect.center
-        if direction == 'left':
-            pts = [(cx + 8, cy - 12), (cx - 8, cy), (cx + 8, cy + 12)]
-        else:
-            pts = [(cx - 8, cy - 12), (cx + 8, cy), (cx - 8, cy + 12)]
-        pygame.draw.polygon(surf, WHITE, pts)
-
-    def _style_action_button(self, button, owned, equipped):
-        if equipped:
-            button.color = (40, 180, 120)
-            button.hover_color = (70, 220, 160)
-            button.text_color = (240, 255, 245)
-        elif owned:
-            button.color = (40, 120, 255)
-            button.hover_color = (75, 160, 255)
-            button.text_color = WHITE
-        else:
-            button.color = (40, 130, 70)
-            button.hover_color = (70, 170, 100)
-            button.text_color = WHITE
-
-    def _stats_text(self, stats):
-        if not stats:
-            return "No bonus  .  This is the stock configuration."
-        parts = []
-        if stats.get('damage_bonus'):
-            parts.append(f"+{stats['damage_bonus']} damage")
-        if stats.get('shoot_rate_delta'):
-            parts.append(f"{stats['shoot_rate_delta']} fire delay")
-        if stats.get('shield_bonus'):
-            parts.append(f"+{stats['shield_bonus']} shield")
-        if stats.get('regen_bonus'):
-            parts.append(f"+{stats['regen_bonus']:.2f} shield regen")
-        if stats.get('speed_bonus'):
-            parts.append(f"+{stats['speed_bonus']} speed")
-        if stats.get('missile'):
-            parts.append("starts with missiles")
-        return "  .  ".join(parts[:3])
-
-    def _draw_stats(self, surf, a, high_score, credits):
-        stats = []
-        if high_score > 0:
-            stats.append(f"BEST  {high_score:08d}")
-        stats.append(f"CREDITS  {credits:06d}")
-        text = "   ".join(stats)
-        ts = a.render('small', text, YELLOW)
-        pad_x, pad_y = 18, 8
-        y = H - 76
-        rect = pygame.Rect(W // 2 - ts.get_width() // 2 - pad_x, y - pad_y, ts.get_width() + pad_x * 2, ts.get_height() + pad_y * 2)
-        back = pygame.Surface(rect.size, pygame.SRCALPHA)
-        pygame.draw.rect(back, (0, 0, 0, 150), back.get_rect(), border_radius=10)
-        pygame.draw.rect(back, (*YELLOW, 95), back.get_rect(), 1, border_radius=10)
-        surf.blit(back, rect.topleft)
-        draw_text_shadow(surf, ts, (W // 2 - ts.get_width() // 2, y))
