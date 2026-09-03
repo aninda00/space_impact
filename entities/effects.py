@@ -139,3 +139,61 @@ class ScreenFlash:
             alpha = int(180 * self.life / 12)
             self.surf.fill((*self.color, alpha))
             surf.blit(self.surf, (0, 0))
+
+
+# ── Camera Shake ──────────────────────────────────────────────────────────
+class CameraShake:
+    def __init__(self):
+        self.duration  = 0
+        self.intensity = 0
+        self.offset_x  = 0
+        self.offset_y  = 0
+
+    def trigger(self, duration=14, intensity=8):
+        self.duration  = max(self.duration, duration)
+        self.intensity = max(self.intensity, intensity)
+
+    def update(self):
+        if self.duration > 0:
+            self.duration -= 1
+            self.offset_x  = random.randint(-self.intensity, self.intensity)
+            self.offset_y  = random.randint(-self.intensity, self.intensity)
+        else:
+            self.intensity = 0
+            self.offset_x  = 0
+            self.offset_y  = 0
+
+    def apply(self, surf):
+        if self.offset_x != 0 or self.offset_y != 0:
+            temp = surf.copy()
+            surf.fill((5, 8, 20))
+            surf.blit(temp, (self.offset_x, self.offset_y))
+
+
+# ── Thruster Particle ─────────────────────────────────────────────────────
+class ThrusterParticle(pygame.sprite.Sprite):
+    def __init__(self, x, y, color=(255, 180, 40)):
+        super().__init__()
+        self.x = float(x)
+        self.y = float(y)
+        self.vx = random.uniform(-6, -2)
+        self.vy = random.uniform(-1.2, 1.2)
+        self.life = random.randint(12, 24)
+        self.max_life = self.life
+        self.color = color
+        self.image = pygame.Surface((6, 6), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+        self.life -= 1
+        if self.life <= 0:
+            self.kill()
+
+    def draw(self, surf):
+        alpha = self.life / self.max_life
+        radius = max(1, int(4 * alpha))
+        c = tuple(int(ch * alpha) for ch in self.color)
+        pygame.draw.circle(surf, c, (int(self.x), int(self.y)), radius)
+

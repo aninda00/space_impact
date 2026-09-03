@@ -16,9 +16,18 @@ class HUD:
         self._combo_count = 0
         self._last_score  = 0
         self._floaters    = []   # [(text, x, y, life, max_life)]
+        self._toast_text  = ''
+        self._toast_life  = 0
+        self._toast_max   = 90  # frames
 
     def add_kill_floater(self, x, y, points):
         self._floaters.append([f"+{points}", x, y, 45, 45])
+
+    def show_toast(self, message, duration_frames=90):
+        """Show a brief on-screen toast message (e.g. mode switch feedback)."""
+        self._toast_text = message
+        self._toast_life = duration_frames
+        self._toast_max  = duration_frames
 
     def update(self, score):
         if score != self._last_score:
@@ -27,6 +36,8 @@ class HUD:
         for f in self._floaters:
             f[3] -= 1
             f[2] -= 1   # float upward
+        if self._toast_life > 0:
+            self._toast_life -= 1
 
     def _blit_text(self, surf, text_surf, pos, shadow=(8, 10, 18), offset=(1, 1)):
         shadow_surf = text_surf.copy()
@@ -98,6 +109,23 @@ class HUD:
             t     = a.render('small', text, YELLOW)
             t.set_alpha(alpha)
             self._blit_text(surf, t, (x, y), shadow=(20, 12, 0))
+
+        # ── Toast notification ────────────────────────────────────────────
+        if self._toast_life > 0 and self._toast_text:
+            t_alpha = min(255, int(255 * self._toast_life / max(1, self._toast_max)))
+            t_surf  = a.render('medium', self._toast_text, WHITE)
+            tw, th  = t_surf.get_size()
+            pad     = 14
+            pill    = pygame.Surface((tw + pad * 2, th + pad), pygame.SRCALPHA)
+            pill.fill((0, 0, 0, 0))
+            pygame.draw.rect(pill, (20, 30, 60, 200), pill.get_rect(), border_radius=10)
+            pygame.draw.rect(pill, (80, 160, 255, 220), pill.get_rect(), 2, border_radius=10)
+            pill.set_alpha(t_alpha)
+            t_surf.set_alpha(t_alpha)
+            px = W // 2 - pill.get_width() // 2
+            py = H - 56
+            surf.blit(pill, (px, py))
+            surf.blit(t_surf, (px + pad, py + pad // 2))
 
     def draw_boss_bar(self, surf, boss):
         boss.draw_healthbar(surf)

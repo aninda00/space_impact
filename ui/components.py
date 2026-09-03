@@ -39,6 +39,8 @@ class Button:
             if self.rect.collidepoint(event.pos):
                 self.pressed = True
                 self.hovered = True
+                from core.audio import AudioEngine
+                AudioEngine().play('click')
                 return True
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.pressed:

@@ -25,6 +25,8 @@ class Player(pygame.sprite.Sprite):
         self.missile_cd = 0
         self.score      = 0
         self.sector     = 1
+        self.thruster_particles = []
+        self.mouse_control = False   # set True to enable direct mouse steering
 
         # Upgrade state
         self.shoot_rate  = P_SHOOT_RATE
@@ -112,18 +114,25 @@ class Player(pygame.sprite.Sprite):
         self.vy = max(-self.max_vy, min(self.max_vy, self.vy))
 
     def update(self, bullets_group, enemies_group):
-        # Smooth vertical movement from wheel + keyboard input.
+        # Smooth vertical movement — keyboard/scroll OR direct mouse tracking
         keys = pygame.key.get_pressed()
-        move_dir = (
-            keys[pygame.K_s] or keys[pygame.K_DOWN]
-        ) - (
-            keys[pygame.K_w] or keys[pygame.K_UP]
-        )
-        if move_dir:
-            self.vy += move_dir * self.keyboard_accel
-        self.vy = max(-self.max_vy, min(self.max_vy, self.vy))
-        self.pos_y += self.vy
-        self.vy *= 0.86
+        if self.mouse_control:
+            # Direct mouse steering: lerp ship Y toward mouse cursor Y
+            mx, my = pygame.mouse.get_pos()
+            target_y = float(my) - self.rect.height / 2
+            self.pos_y += (target_y - self.pos_y) * 0.12
+            self.vy = 0.0
+        else:
+            move_dir = (
+                keys[pygame.K_s] or keys[pygame.K_DOWN]
+            ) - (
+                keys[pygame.K_w] or keys[pygame.K_UP]
+            )
+            if move_dir:
+                self.vy += move_dir * self.keyboard_accel
+            self.vy = max(-self.max_vy, min(self.max_vy, self.vy))
+            self.pos_y += self.vy
+            self.vy *= 0.86
 
         min_y = 5
         max_y = H - self.rect.height - 5
@@ -134,6 +143,13 @@ class Player(pygame.sprite.Sprite):
 
         # Player X boundary (left half)
         self.rect.x = max(10, min(W // 2 - self.rect.width, self.rect.x))
+
+        # Spawn thruster exhaust particles
+        from entities.effects import ThrusterParticle
+        if random.random() < 0.8:
+            self.thruster_particles.append(
+                ThrusterParticle(self.rect.left + 5, self.rect.centery + random.randint(-4, 4))
+            )
 
         # Timers
         if self.invincible  > 0: self.invincible  -= 1
@@ -163,11 +179,14 @@ class Player(pygame.sprite.Sprite):
     def _fire(self):
         bullets = []
         x, y = self.rect.right - 5, self.rect.centery
+        from core.audio import AudioEngine
+        audio = AudioEngine()
 
         # Missile shot
         if self.has_missile and self.shot_count % self.missile_interval == 0:
             m = Missile(x, y)
             bullets.append(m)
+            audio.play('missile')
 
         def make(vy=0):
             return PlayerBullet(x, y, damage=self.damage,
@@ -180,6 +199,7 @@ class Player(pygame.sprite.Sprite):
             bullets += [make(-2), make(2)]
         else:
             bullets.append(make(0))
+        audio.play('laser')
         return bullets
 
     def _apply_upgrade_glow(self):
@@ -191,6 +211,8 @@ class Player(pygame.sprite.Sprite):
     def hit(self, damage=15):
         if self.invincible > 0:
             return False
+        from core.audio import AudioEngine
+        AudioEngine().play('hit')
         self.shield -= damage
         if self.shield <= 0:
             self.shield     = 0
@@ -202,7 +224,24 @@ class Player(pygame.sprite.Sprite):
         return False
 
     def draw(self, surf):
+        # Draw thruster trail particles
+        if hasattr(self, 'thruster_particles'):
+            self.thruster_particles = [p for p in self.thruster_particles if p.alive()]
+            for p in self.thruster_particles:
+                p.update()
+                p.draw(surf)
+
+        # Draw ship
         surf.blit(self.image, self.rect)
+
+        # Draw translucent shield bubble if shield is active or hit
+        if self.shield > 0 and (self.invincible > 0 or self.shield / self.max_shield > 0.2):
+            s_alpha = 140 if self.invincible > 0 else int(40 + 50 * (self.shield / self.max_shield))
+            shield_surf = pygame.Surface((self.rect.w + 24, self.rect.h + 20), pygame.SRCALPHA)
+            pygame.draw.ellipse(shield_surf, (*CYAN, s_alpha // 3), shield_surf.get_rect())
+            pygame.draw.ellipse(shield_surf, (*CYAN, s_alpha), shield_surf.get_rect(), 2)
+            surf.blit(shield_surf, (self.rect.x - 12, self.rect.y - 10))
+
         self._draw_lives_indicator(surf)
 
     def _draw_lives_indicator(self, surf):

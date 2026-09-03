@@ -52,6 +52,8 @@ class UpgradeScreen:
                     u = self._upgrades[i]
                     upgrade_system.apply(u['id'], player)
                     self._chosen = i
+                    from core.audio import AudioEngine
+                    AudioEngine().play('upgrade')
                     return 'chosen'
         return None
 

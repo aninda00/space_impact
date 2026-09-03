@@ -4,13 +4,14 @@ import math
 import json
 import os
 from enum import Enum, auto
+from core.save_manager import SaveManager, SAVE_KEYS
 
 from core.settings import (W, H, FPS, TOTAL_SECTORS, BG, DARK, CYAN, WHITE,
                             GREY, RED, YELLOW, GREEN, ORANGE, PURPLE, BLUE, GOLD)
 from core.assets import Assets
 
 from entities.player   import Player
-from entities.effects  import StarField, Explosion, Particle, ScreenFlash
+from entities.effects  import StarField, Explosion, Particle, ScreenFlash, CameraShake
 from entities.bullet   import Missile
 
 from systems.wave_manager   import WaveManager
@@ -24,14 +25,6 @@ from ui.menu           import MainMenu
 from ui.upgrade_screen import UpgradeScreen
 from ui.components     import Button, Panel
 
-SAVE_FILE = os.path.join(os.path.dirname(__file__), "save.json")
-SAVE_KEYS = (
-    'state', 'game_mode', 'sector', 'wave', 'wave_kills', 'score', 'lives', 'shield',
-    'max_shield', 'shoot_rate', 'damage', 'double_shot', 'triple_shot',
-    'piercing', 'has_missile', 'shield_regen', 'speed', 'player_y',
-    'upg_levels', 'story_timer', 'boss_warn_timer', 'wave_banner_timer',
-    'mode_timer', 'next_upgrade_timer', 'time_left'
-)
 
 
 class State(Enum):
@@ -53,11 +46,13 @@ class Game:
         a            = Assets()
         a.load()
 
+        self.saver      = SaveManager()
         self.high_score = self._load_hs()
         self.starfield  = StarField()
         self.menu       = MainMenu()
         self.menu.set_starfield(self.starfield)
         self.flash      = ScreenFlash()
+        self.camera_shake = CameraShake()
         self.state      = State.MENU
         self.game_mode  = 'campaign'
         self._start_sector = 1
@@ -138,6 +133,8 @@ class Game:
             self.wave_mgr.start_boss_rush()
             self.state = State.BOSS_WARN
             self._boss_warn_timer = 0
+            from core.audio import AudioEngine
+            AudioEngine().play('boss_warn')
         elif self.game_mode == 'survival':
             self.wave_mgr.start_survival()
             self._wave_banner_timer = 90
@@ -155,6 +152,7 @@ class Game:
             self._handle_events()
             self._update()
             self._draw(canvas)
+            self.camera_shake.apply(canvas)
             win = pygame.display.get_surface()
             pygame.transform.smoothscale(canvas, win.get_size(), win)
             pygame.display.flip()
@@ -191,6 +189,10 @@ class Game:
                         pygame.quit(); sys.exit()
                 if event.key == pygame.K_F5 and self.state == State.PLAYING:
                     self._save_progress()
+                if event.key == pygame.K_m and self.state == State.PLAYING:
+                    self.player.mouse_control = not self.player.mouse_control
+                    label = "Mouse" if self.player.mouse_control else "Keyboard"
+                    self.hud.show_toast(f"{label} controls")
 
             # Mouse scroll for player movement
             if event.type == pygame.MOUSEWHEEL and self.state == State.PLAYING:
@@ -287,6 +289,7 @@ class Game:
     def _update(self):
         self.starfield.update()
         self.flash.update()
+        self.camera_shake.update()
 
         if self.state == State.MENU:
             self.menu.update()
@@ -374,6 +377,7 @@ class Game:
                 eb.kill()
                 lost_life = self.player.hit(eb.damage)
                 self.flash.trigger(RED, 6)
+                self.camera_shake.trigger(10, 6)
                 if lost_life and self.player.lives <= 0:
                     self._game_over()
                     return
@@ -383,6 +387,7 @@ class Game:
             if e.rect.colliderect(self.player.rect):
                 lost_life = self.player.hit(30)
                 self.flash.trigger(ORANGE, 8)
+                self.camera_shake.trigger(16, 10)
                 self._on_enemy_killed(e)
                 kills_this_frame += 1
                 if lost_life and self.player.lives <= 0:
@@ -404,6 +409,8 @@ class Game:
         elif signal == 'boss_warning':
             self.state = State.BOSS_WARN
             self._boss_warn_timer = 0
+            from core.audio import AudioEngine
+            AudioEngine().play('boss_warn')
         elif signal == 'sector_clear':
             self._sector_clear()
         elif signal == 'game_clear':
@@ -424,6 +431,8 @@ class Game:
         pts = enemy.SCORE
         self.player.score += pts
         self._award_credits(max(1, pts // 50))
+        from core.audio import AudioEngine
+        AudioEngine().play('explosion')
         if self.game_mode == 'time_attack':
             self.wave_mgr.add_time_bonus(30)
         self.hud.add_kill_floater(cx, cy - 20, pts)
@@ -436,11 +445,14 @@ class Game:
                 self.explosions.add(Explosion(cx + ((_-3)*30), cy, size=60, color=RED))
             self.player.score += self._boss_ref.SCORE
             self._award_credits(max(100, self._boss_ref.SCORE // 25))
+            from core.audio import AudioEngine
+            AudioEngine().play('boss_explosion')
             if self.game_mode == 'time_attack':
                 self.wave_mgr.add_time_bonus(600)
             self._boss_ref.kill()
             self._boss_ref = None
             self.flash.trigger(WHITE, 14)
+            self.camera_shake.trigger(28, 16)
 
     def _spawn_boss(self):
         self.wave_mgr.spawn_boss(self.enemies, self.all_sprites)
@@ -799,17 +811,10 @@ class Game:
         }
 
     def _read_save_data(self):
-        if not os.path.exists(SAVE_FILE):
-            return {}
-        try:
-            with open(SAVE_FILE, encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            return {}
+        return self.saver.read()
 
     def _write_save_data(self, data):
-        with open(SAVE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+        self.saver.write(data)
 
     def _clear_progress(self):
         try:
@@ -996,39 +1001,8 @@ class Game:
             self.equipped_parts = dict(DEFAULT_EQUIPPED_PARTS)
 
     def _ensure_profile_defaults(self, data):
-        if 'owned_parts' not in data:
-            legacy_owned = set(data.get('owned_attachments', []))
-            owned_parts = set(DEFAULT_EQUIPPED_PARTS.values())
-            if 'pulse_cannon' in legacy_owned:
-                owned_parts.add('laser_cannon_mk2')
-            if 'shield_array' in legacy_owned:
-                owned_parts.add('shield_generator_aegis')
-            if 'overdrive' in legacy_owned:
-                owned_parts.add('plasma_core_overdrive')
-            if 'seeker_rack' in legacy_owned:
-                owned_parts.add('missile_rack_seeker')
-            data['owned_parts'] = sorted(owned_parts)
-        if 'equipped_parts' not in data:
-            equipped_parts = dict(DEFAULT_EQUIPPED_PARTS)
-            legacy_equipped = data.get('equipped_attachment')
-            if legacy_equipped == 'pulse_cannon':
-                equipped_parts['laser_cannon'] = 'laser_cannon_mk2'
-            elif legacy_equipped == 'shield_array':
-                equipped_parts['shield_generator'] = 'shield_generator_aegis'
-            elif legacy_equipped == 'overdrive':
-                equipped_parts['plasma_core'] = 'plasma_core_overdrive'
-            elif legacy_equipped == 'seeker_rack':
-                equipped_parts['missile_rack'] = 'missile_rack_seeker'
-            data['equipped_parts'] = equipped_parts
-        data.setdefault('credits', 0)
-        data.setdefault('owned_skins', ['classic'])
-        data.setdefault('owned_parts', sorted(DEFAULT_EQUIPPED_PARTS.values()))
-        data.setdefault('equipped_skin', 'classic')
-        data.setdefault('equipped_parts', dict(DEFAULT_EQUIPPED_PARTS))
-        data.setdefault('campaign_unlocked_sector', 1)
-        data.setdefault('campaign_completed_sector', 0)
-        data.setdefault('campaign_rewarded_sector', 0)
-        return data
+        """Delegate legacy migration + defaults to SaveManager."""
+        return self.saver.ensure_profile_defaults(data, DEFAULT_EQUIPPED_PARTS)
 
     def _sync_campaign_rewards(self, data):
         completed = int(data.get('campaign_completed_sector', 0))
@@ -1091,15 +1065,8 @@ class Game:
         self._save_profile()
 
     def _load_hs(self):
-        try:
-            return self._read_save_data().get('high_score', 0)
-        except Exception:
-            return 0
+        return self.saver.get_high_score()
 
     def _save_hs(self):
-        try:
-            data = self._read_save_data()
-            data['high_score'] = self.high_score
-            self._write_save_data(data)
-        except Exception:
-            pass
+        self.saver.save_high_score(self.high_score)
+
