@@ -151,6 +151,16 @@ class WaveManager:
                     e_bullets_group.add(b)
                 if self.boss.hp <= 0:
                     self.boss.kill()
+                    self.boss        = None
+                    self.boss_active = False
+                    if self.mode == 'boss_rush':
+                        if self.sector >= TOTAL_SECTORS:
+                            self.state = 'game_clear'
+                            return 'game_clear'
+                        self.sector += 1
+                        self.wave = self.sector
+                        self.state = 'boss_clear'
+                        return 'upgrade'
                     self.boss = None
 
             if self.boss2:
@@ -168,6 +178,9 @@ class WaveManager:
                     if self.sector >= TOTAL_SECTORS:
                         self.state = 'game_clear'
                         return 'game_clear'
+                    else:
+                        self.state = 'sector_clear'
+                        return 'sector_clear'
                     self.sector += 1
                     self.wave = self.sector
                     self.state = 'boss_clear'
@@ -223,6 +236,8 @@ class WaveManager:
         sec2 = max(0, self.sector - 2)
         BossClass2 = SECTOR_BOSSES[sec2]
         boss2 = BossClass2()
+        # Scale down the secondary boss to 65% HP
+        boss2.max_hp = max(1, int(boss2.max_hp * 0.65))
         if self.mode == 'campaign':
             hp_mult = 0.58
             shield_mult = 0.55
@@ -232,8 +247,11 @@ class WaveManager:
         # Balanced secondary boss tuning
         boss2.max_hp = max(1, int(boss2.max_hp * 0.70))
         boss2.hp = float(boss2.max_hp)
+        boss2.max_shield = max(0, int(boss2.max_shield * 0.5))
         boss2.max_shield = max(0, int(boss2.max_shield * 0.60))
         boss2.shield = float(boss2.max_shield)
+        # Offset position vertically
+        boss2.rect.y += 160
         # Dedicated lower lane offset and staggered wave movement
         boss2.lane_offset_y = 180
         boss2.rect.centery = H // 2 + 180

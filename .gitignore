@@ -1,21 +1,67 @@
-# Python bytecode and caches
+# ==========================================
+# Bytecode and Cache Directories
+# ==========================================
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
+*.pyc.*
 
-# Virtual environments
+# ==========================================
+# Game Saves, User Progress & Playing Stats
+# ==========================================
+# Local save files, high scores, and player unlock stats
+save.json
+**/save.json
+*save*.json
+*.save
+*.save.*
+saves/
+**/saves/
+stats.json
+*stats*.json
+stats.dat
+high_score*.json
+profile*.json
+settings.json
+local_settings.py
+
+# ==========================================
+# Temporary, Backup & Swap Files
+# ==========================================
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+
+# ==========================================
+# Logs and Diagnostics
+# ==========================================
+*.log
+logs/
+
+# ==========================================
+# Virtual Environments
+# ==========================================
 .venv/
 venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 
-# Packaging and build output
+# ==========================================
+# Packaging & Build Artifacts
+# ==========================================
 build/
 dist/
 *.egg-info/
 .eggs/
 
-# Test, coverage, and type-check caches
+# ==========================================
+# Testing, Coverage & Linting Caches
+# ==========================================
 .pytest_cache/
 .coverage
 coverage.xml
@@ -24,19 +70,16 @@ htmlcov/
 .ruff_cache/
 .tox/
 
-# Local game/runtime data
-*.log
-*.tmp
-*.bak
-*.save
-saves/
-core/save.json
-
-# IDE and OS files
-.idea/
+# ==========================================
+# IDE & Operating System Specific Files
+# ==========================================
 .vscode/
-*.swp
-*.swo
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS metadata
 .DS_Store
 Thumbs.db
+ehthumbs.db
 desktop.ini

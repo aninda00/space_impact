@@ -256,6 +256,7 @@ class MainMenu:
         cx = W // 2
         
         panel_y = 190 if not self._btn_continue else 170
+        panel_h = 425 if not self._btn_continue else 445
         panel_h = 520 if not self._btn_continue else 540
         hub_panel = Panel(cx - 410, panel_y, 820, panel_h, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         hub_panel.draw(surf)

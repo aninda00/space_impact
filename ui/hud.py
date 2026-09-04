@@ -211,6 +211,7 @@ class HUD:
             self._draw_single_boss_bar(surf, boss2, bx, by, bw, label_prefix="[TITAN] ")
 
     def draw_boss_bar(self, surf, boss, offset_y=0):
+        boss.draw_healthbar(surf, offset_y=offset_y)
         self.draw_boss_bars(surf, boss)
 
     def draw_wave_banner(self, surf, sector, wave, timer, max_timer, mode='campaign'):

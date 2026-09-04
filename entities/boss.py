@@ -97,6 +97,8 @@ class Boss(pygame.sprite.Sprite):
         return []
 
     def _move(self):
+        self.rect.y = int(H // 2 - self.SIZE[1] // 2
+                          + math.sin(self.tick * 0.025) * 120)
         base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         amp = 70 if getattr(self, 'lane_offset_y', 0) else 120
         self.rect.y = int(base_y + math.sin(self.tick * 0.025) * amp)
@@ -268,6 +270,7 @@ class Phantom(Boss):
     def _move(self):
         self.teleport_timer -= 1
         if self.teleport_timer <= 0:
+            self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
             lane = getattr(self, 'lane_offset_y', 0)
             if lane < 0:
                 self.rect.y = random.randint(20, max(25, H // 2 - self.SIZE[1] - 30))
@@ -340,6 +343,7 @@ class Leviathan(Boss):
         base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         amp = 75 if getattr(self, 'lane_offset_y', 0) else 150
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.02) * 60)
+        self.rect.y = int(H//2 - self.SIZE[1]//2 + math.sin(self.tick * 0.03) * 150)
         self.rect.y = int(base_y + math.sin(self.tick * 0.03) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
@@ -487,8 +491,10 @@ class Overlord(Boss):
     def _move(self):
         base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         speed = 0.02 + (self.phase - 1) * 0.01
+        amp   = 100 + (self.phase - 1) * 50
         amp   = (55 if getattr(self, 'lane_offset_y', 0) else 100) + (self.phase - 1) * 35
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.015) * 80)
+        self.rect.y = int(H//2 - self.SIZE[1]//2 + math.sin(self.tick * speed) * amp)
         self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
@@ -579,6 +585,7 @@ class VoidReaper(Boss):
         speed = 0.028 + (self.phase - 1) * 0.008
         amp = 90 if getattr(self, 'lane_offset_y', 0) else 210
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.035) * (70 + self.phase * 12))
+        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * speed) * 210)
         self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
@@ -650,6 +657,7 @@ class StarDevourer(Boss):
         base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         amp = (70 if getattr(self, 'lane_offset_y', 0) else 150) + self.phase * 20
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.012) * 95)
+        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.022) * (150 + self.phase * 25))
         self.rect.y = int(base_y + math.sin(self.tick * 0.022) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
@@ -664,10 +672,15 @@ class StarDevourer(Boss):
             bullets.append(EnemyBullet(x, y,
                 vx=int(math.cos(angle + math.pi) * spd),
                 vy=int(math.sin(angle) * spd),
+                color=ORANGE))
+        if self.phase >= 2:
+            for off in [-80, 0, 80]:
+                bullets.append(EnemyBullet(x, y + off, vx=-10, vy=0, color=GOLD))
                 color=GOLD))
         return bullets
 
     def _attack_rate(self):
+        return max(24, 58 - (self.phase - 1) * 10)
         return max(24, 50 - self.phase * 8)
 
 
@@ -801,6 +814,7 @@ class OblivionCore(Boss):
         amp = (65 if getattr(self, 'lane_offset_y', 0) else 140) + self.phase * 15
         speed = 0.018 + (self.phase - 1) * 0.005
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.018) * 110)
+        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * speed) * (140 + self.phase * 18))
         self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
@@ -983,6 +997,7 @@ class DataBoss(Boss):
         if self.spec.movement == "teleport":
             self.teleport_timer -= 1
             if self.teleport_timer <= 0:
+                self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
                 if lane < 0:
                     self.rect.y = random.randint(20, max(25, H // 2 - self.SIZE[1] - 30))
                 elif lane > 0:
@@ -994,14 +1009,18 @@ class DataBoss(Boss):
 
         if self.spec.movement == "drift":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.016) * (54 + self.phase * 18))
+            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.025) * (110 + self.phase * 36))
             self.rect.y = int(base_y + math.sin(self.tick * 0.025) * ((110 + self.phase * 36) * amp_scale))
         elif self.spec.movement == "blade":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.035) * (70 + self.phase * 12))
+            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.03) * 210)
             self.rect.y = int(base_y + math.sin(self.tick * 0.03) * (210 * amp_scale))
         elif self.spec.movement == "heavy":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.014) * 95)
+            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.02) * (135 + self.phase * 22))
             self.rect.y = int(base_y + math.sin(self.tick * 0.02) * ((135 + self.phase * 22) * amp_scale))
         else:
+            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.025) * 120)
             self.rect.y = int(base_y + math.sin(self.tick * 0.025) * (120 * amp_scale))
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
