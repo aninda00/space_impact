@@ -200,15 +200,25 @@ class CameraShake:
         self.intensity = 0.0
         self.offset_x = 0
         self.offset_y = 0
+        self._decay = 0.84
 
-    def trigger(self, intensity=8.0):
-        self.intensity = max(self.intensity, intensity)
+    def trigger(self, intensity=8.0, duration=20):
+        """Start a camera shake.
+        intensity – peak pixel displacement.
+        duration  – approximate number of frames until shake subsides."""
+        self.intensity = max(self.intensity, float(intensity))
+        # Compute a decay multiplier so intensity reaches ~5% after `duration` frames
+        # decay^duration = 0.05  =>  decay = 0.05^(1/duration)
+        if duration > 0:
+            self._decay = 0.05 ** (1.0 / duration)
+        else:
+            self._decay = 0.0
 
     def update(self):
         if self.intensity > 0.3:
             self.offset_x = random.uniform(-self.intensity, self.intensity)
             self.offset_y = random.uniform(-self.intensity, self.intensity)
-            self.intensity *= 0.84
+            self.intensity *= self._decay
         else:
             self.intensity = 0.0
             self.offset_x = 0
@@ -240,6 +250,9 @@ class SmokePuff(pygame.sprite.Sprite):
         if self.life <= 0:
             self.kill()
 
+    def alive(self):
+        return self.life > 0
+
     def draw(self, surf):
         progress = 1.0 - (self.life / self.duration)
         r = int(self.radius + (self.max_r - self.radius) * progress)
@@ -248,6 +261,8 @@ class SmokePuff(pygame.sprite.Sprite):
             s = pygame.Surface((r * 2 + 2, r * 2 + 2), pygame.SRCALPHA)
             pygame.draw.circle(s, (*self.color, alpha), (r + 1, r + 1), r)
             surf.blit(s, (int(self.x) - r - 1, int(self.y) - r - 1))
+
+SmokeParticle = SmokePuff
 
 
 class ElectricSpark(pygame.sprite.Sprite):
@@ -268,12 +283,51 @@ class ElectricSpark(pygame.sprite.Sprite):
         if self.life <= 0:
             self.kill()
 
+    def alive(self):
+        return self.life > 0
+
     def draw(self, surf):
-        alpha = self.life / self.duration
+        alpha = max(0.0, self.life / self.duration)
         c = tuple(int(ch * alpha) for ch in self.color)
         ex = int(self.x + self.vx * 2)
         ey = int(self.y + self.vy * 2)
         pygame.draw.line(surf, c, (int(self.x), int(self.y)), (ex, ey), 2)
+
+SparkParticle = ElectricSpark
+
+
+class ThrusterParticle(pygame.sprite.Sprite):
+    def __init__(self, x, y, color=None, radius=3, duration=16):
+        super().__init__()
+        self.x = float(x)
+        self.y = float(y)
+        self.vx = random.uniform(-5.5, -2.5)
+        self.vy = random.uniform(-1.0, 1.0)
+        self.radius = radius
+        self.max_r = max(1.0, radius * 0.4)
+        self.duration = duration
+        self.life = duration
+        self.color = color or random.choice([(255, 200, 50), (255, 130, 30), (255, 60, 20), (255, 240, 180)])
+
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+        self.life -= 1
+        if self.life <= 0:
+            self.kill()
+
+    def alive(self):
+        return self.life > 0
+
+    def draw(self, surf):
+        if self.life <= 0:
+            return
+        progress = 1.0 - (self.life / self.duration)
+        r = max(1, int(self.radius - (self.radius - self.max_r) * progress))
+        alpha = int(240 * (1.0 - progress))
+        s = pygame.Surface((r * 2 + 2, r * 2 + 2), pygame.SRCALPHA)
+        pygame.draw.circle(s, (*self.color, alpha), (r + 1, r + 1), r)
+        surf.blit(s, (int(self.x) - r - 1, int(self.y) - r - 1))
 
 
 # ── Celestial Cosmic Body (Planets, Moons, Radiant Distant Suns) ───────────

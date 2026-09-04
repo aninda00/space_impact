@@ -167,12 +167,12 @@ class CodexScreen:
 
         d_head = a.render('tiny', "TACTICAL PROFILE:", GREY)
         surf.blit(d_head, (det_x + 24, det_y + 120))
-        desc_t = a.render_fit(['small', 'tiny'], entry['desc'], WHITE, det_w - 48)
+        desc_t = a.render_wrap('small', entry['desc'], WHITE, det_w - 48)
         surf.blit(desc_t, (det_x + 24, det_y + 145))
 
         t_head = a.render('tiny', "COMBAT COUNTER-MEASURES:", GREY)
         surf.blit(t_head, (det_x + 24, det_y + 220))
-        tac_t = a.render_fit(['small', 'tiny'], entry['tactics'], RETRO_SAGE, det_w - 48)
+        tac_t = a.render_wrap('small', entry['tactics'], RETRO_SAGE, det_w - 48)
         surf.blit(tac_t, (det_x + 24, det_y + 245))
 
     def _draw_bosses_tab(self, surf, a):
@@ -194,7 +194,7 @@ class CodexScreen:
             if is_sel:
                 pygame.draw.rect(surf, RETRO_CRIMSON, rect, 2, border_radius=6)
 
-            t = a.render('small', entry['name'], WHITE)
+            t = a.render_fit(['small', 'tiny'], entry['name'], WHITE, list_w - 40)
             sec_t = a.render('tiny', entry['sector'], RETRO_CREAM)
             surf.blit(t, (rect.x + 12, rect.y + 12))
             surf.blit(sec_t, (rect.x + 12, rect.y + 38))
@@ -205,24 +205,24 @@ class CodexScreen:
         pygame.draw.rect(surf, (22, 28, 30), (det_x, det_y, det_w, det_h), border_radius=8)
         pygame.draw.rect(surf, RETRO_TERRA, (det_x, det_y, det_w, det_h), 2, border_radius=8)
 
-        title_t = a.render('large', entry['name'], RETRO_CRIMSON)
+        title_t = a.render_fit(['large', 'medium', 'small'], entry['name'], RETRO_CRIMSON, det_w - 48)
         surf.blit(title_t, (det_x + 24, det_y + 18))
         sec_t = a.render('small', entry['sector'], RETRO_CREAM)
         surf.blit(sec_t, (det_x + 24, det_y + 55))
 
         pygame.draw.line(surf, RETRO_TERRA, (det_x + 20, det_y + 88), (det_x + det_w - 20, det_y + 88), 1)
 
-        s1 = a.render('small', f"HULL HP: {entry['hp']}    SHIELD: {entry['shield']}    REWARD: {entry['score']} PTS", WHITE)
+        s1 = a.render_fit(['small', 'tiny'], f"HULL HP: {entry['hp']}    SHIELD: {entry['shield']}    REWARD: {entry['score']} PTS", WHITE, det_w - 48)
         surf.blit(s1, (det_x + 24, det_y + 105))
 
         d_head = a.render('tiny', "INTELLIGENCE REPORT:", GREY)
         surf.blit(d_head, (det_x + 24, det_y + 150))
-        desc_t = a.render_fit(['small', 'tiny'], entry['desc'], WHITE, det_w - 48)
+        desc_t = a.render_wrap('small', entry['desc'], WHITE, det_w - 48)
         surf.blit(desc_t, (det_x + 24, det_y + 175))
 
         t_head = a.render('tiny', "TACTICAL WEAKNESSES & STRATEGY:", GREY)
         surf.blit(t_head, (det_x + 24, det_y + 250))
-        tac_t = a.render_fit(['small', 'tiny'], entry['tactics'], RETRO_AMBER, det_w - 48)
+        tac_t = a.render_wrap('small', entry['tactics'], RETRO_AMBER, det_w - 48)
         surf.blit(tac_t, (det_x + 24, det_y + 275))
 
     def _draw_shipyard_tab(self, surf, a):

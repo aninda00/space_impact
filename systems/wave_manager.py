@@ -16,6 +16,7 @@ class WaveManager:
         self.speed_mult  = 1.0
         self.boss_active = False
         self.boss        = None
+        self.boss2       = None
         self.spawning    = True   # stops when kill goal reached
         self.state       = 'idle'
         self.mode_timer  = 0
@@ -34,6 +35,7 @@ class WaveManager:
         self.wave        = 0
         self.boss_active = False
         self.boss        = None
+        self.boss2       = None
         self.speed_mult  = 1.0 + (sector - 1) * 0.14
         self.start_next_wave()
 
@@ -44,6 +46,7 @@ class WaveManager:
         self.wave_goal   = TOTAL_SECTORS
         self.boss_active = False
         self.boss        = None
+        self.boss2       = None
         self.speed_mult  = 1.0
         self.state       = 'boss_warning'
 
@@ -148,28 +151,40 @@ class WaveManager:
                     e_bullets_group.add(b)
                 if self.boss.hp <= 0:
                     self.boss.kill()
-                    self.boss        = None
-                    self.boss_active = False
-                    if self.mode == 'boss_rush':
-                        if self.sector >= TOTAL_SECTORS:
-                            self.state = 'game_clear'
-                            return 'game_clear'
-                        self.sector += 1
-                        self.wave = self.sector
-                        self.state = 'boss_clear'
-                        return 'upgrade'
+                    self.boss = None
+
+            if self.boss2:
+                b2_bullets = self.boss2.update()
+                for b in b2_bullets:
+                    e_bullets_group.add(b)
+                if self.boss2.hp <= 0:
+                    self.boss2.kill()
+                    self.boss2 = None
+
+            # Boss battle is cleared only when ALL bosses are defeated
+            if not self.boss and not self.boss2:
+                self.boss_active = False
+                if self.mode == 'boss_rush':
                     if self.sector >= TOTAL_SECTORS:
                         self.state = 'game_clear'
                         return 'game_clear'
-                    else:
-                        self.state = 'sector_clear'
-                        return 'sector_clear'
+                    self.sector += 1
+                    self.wave = self.sector
+                    self.state = 'boss_clear'
+                    return 'upgrade'
+                if self.sector >= TOTAL_SECTORS:
+                    self.state = 'game_clear'
+                    return 'game_clear'
+                else:
+                    self.state = 'sector_clear'
+                    return 'sector_clear'
 
         return None
 
     def spawn_boss(self, enemies_group, sprites_all):
         if self.mode == 'endless':
             return
+        from core.settings import H, W
         BossClass        = SECTOR_BOSSES[self.sector - 1]
         self.boss        = BossClass()
         if self.mode == 'campaign':
@@ -184,6 +199,16 @@ class WaveManager:
         if self.difficulty in ('hardcore', 'bullet_hell'):
             self.boss.max_hp = int(self.boss.max_hp * 1.4)
             self.boss.hp = float(self.boss.max_hp)
+        elif self.difficulty == 'double_boss':
+            # Lane split for twin titans: Boss 1 patrols upper lane
+            self.boss.lane_offset_y = -180
+            self.boss.rect.centery = H // 2 - 180
+            self.boss.is_secondary = False
+        else:
+            self.boss.lane_offset_y = 0
+            self.boss.rect.centery = H // 2
+            self.boss.is_secondary = False
+
         sprites_all.add(self.boss)
         self.boss_active = True
         self.state       = 'boss'
@@ -191,19 +216,32 @@ class WaveManager:
     def spawn_second_boss(self, enemies_group, sprites_all):
         """Spawn a secondary boss for Double Boss Surge mode."""
         if self.mode == 'endless' or self.difficulty != 'double_boss':
+            self.boss2 = None
             return None
+        from core.settings import H, W
         # Pick the previous sector's boss as the second boss, or same sector if sector 1
         sec2 = max(0, self.sector - 2)
         BossClass2 = SECTOR_BOSSES[sec2]
         boss2 = BossClass2()
-        # Scale down the secondary boss to 65% HP
-        boss2.max_hp = max(1, int(boss2.max_hp * 0.65))
+        if self.mode == 'campaign':
+            hp_mult = 0.58
+            shield_mult = 0.55
+            boss2.max_hp = max(1, int(boss2.max_hp * hp_mult))
+            boss2.max_shield = max(0, int(boss2.max_shield * shield_mult))
+            boss2.campaign_tuned = True
+        # Balanced secondary boss tuning
+        boss2.max_hp = max(1, int(boss2.max_hp * 0.70))
         boss2.hp = float(boss2.max_hp)
-        boss2.max_shield = max(0, int(boss2.max_shield * 0.5))
+        boss2.max_shield = max(0, int(boss2.max_shield * 0.60))
         boss2.shield = float(boss2.max_shield)
-        # Offset position vertically
-        boss2.rect.y += 160
+        # Dedicated lower lane offset and staggered wave movement
+        boss2.lane_offset_y = 180
+        boss2.rect.centery = H // 2 + 180
+        boss2.tick = 45  # Desynchronize wave motion from Boss 1
+        boss2.target_x = W - boss2.SIZE[0] - 80
+        boss2.is_secondary = True
         sprites_all.add(boss2)
+        self.boss2 = boss2
         return boss2
 
     def add_time_bonus(self, frames):

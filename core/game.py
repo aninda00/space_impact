@@ -7,7 +7,8 @@ from enum import Enum, auto
 from core.save_manager import SaveManager, SAVE_KEYS
 
 from core.settings import (W, H, FPS, TOTAL_SECTORS, BG, DARK, CYAN, WHITE,
-                            GREY, RED, YELLOW, GREEN, ORANGE, PURPLE, BLUE, GOLD)
+                            GREY, RED, YELLOW, GREEN, ORANGE, PURPLE, BLUE, GOLD,
+                            RETRO_AMBER, RETRO_TERRA, RETRO_SAGE, RETRO_CREAM, RETRO_CRIMSON, RETRO_MOSS)
 from core.assets import Assets
 
 from entities.player   import Player
@@ -252,7 +253,7 @@ class Game:
                     self._start_game('survival')
                 elif result == 'time_attack':
                     self._start_game('time_attack')
-                elif isinstance(result, tuple) and result[0] == 'sector':
+                elif isinstance(result, tuple) and result[0] in ('sector', 'campaign_level'):
                     self._start_game('campaign', result[1])
                 elif isinstance(result, tuple) and result[0] == 'buy_skin':
                     self._buy_skin(result[1])
@@ -418,8 +419,10 @@ class Game:
         for b in self.bullets:
             if isinstance(b, Missile):
                 targets = list(self.enemies)
-                if self.wave_mgr.boss_active and self._boss_ref and self._boss_ref.alive():
+                if self._boss_ref and self._boss_ref.alive():
                     targets.append(self._boss_ref)
+                if getattr(self, '_boss_ref2', None) and self._boss_ref2.alive():
+                    targets.append(self._boss_ref2)
                 b.set_target(targets)
 
         # Bullets
@@ -442,19 +445,21 @@ class Game:
         # ── Collisions ────────────────────────────────────────────────────
         kills_this_frame = 0
 
-        # Player bullets ↔ Enemies
-        if self.wave_mgr.boss_active and self._boss_ref:
+        # Player bullets ↔ Bosses or Regular Enemies
+        if self.wave_mgr.boss_active:
+            active_bosses = [boss for boss in (self._boss_ref, getattr(self, '_boss_ref2', None)) if boss and boss.alive()]
             for b in list(self.bullets):
-                if not self._boss_ref or not self._boss_ref.alive():
-                    break
-                if b.rect.colliderect(self._boss_ref.rect):
-                    is_missile = isinstance(b, Missile)
-                    self.stats.record_hit(b.damage, is_missile=is_missile)
-                    if not b.piercing:
-                        b.kill()
-                    dead = self._boss_ref.hit(b.damage)
-                    if dead:
-                        self._on_boss_killed()
+                for boss in active_bosses:
+                    if not boss.alive():
+                        continue
+                    if b.rect.colliderect(boss.rect):
+                        is_missile = isinstance(b, Missile)
+                        self.stats.record_hit(b.damage, is_missile=is_missile)
+                        dead = boss.hit(b.damage)
+                        if not getattr(b, 'piercing', False):
+                            b.kill()
+                        if dead:
+                            self._on_boss_killed(boss)
                         break
         else:
             hit_map = pygame.sprite.groupcollide(
@@ -464,7 +469,7 @@ class Game:
                     is_missile = isinstance(b, Missile)
                     self.stats.record_hit(b.damage, is_missile=is_missile)
                     dead = enemy.hit(b.damage)
-                    if not b.piercing:
+                    if not getattr(b, 'piercing', False):
                         b.kill()
                     if dead:
                         self._on_enemy_killed(enemy)
@@ -495,36 +500,10 @@ class Game:
                     self._game_over()
                     return
 
-        # Wave manager tick
+        # Wave manager tick (updates both bosses and returns wave/boss signals)
         signal = self.wave_mgr.update(
             self.enemies, self.e_bullets,
             delta_kills=kills_this_frame)
-
-        # Second boss update (Double Boss Surge)
-        if hasattr(self, '_boss_ref2') and self._boss_ref2 and self._boss_ref2.alive():
-            b2_bullets = self._boss_ref2.update()
-            for b in b2_bullets:
-                self.e_bullets.add(b)
-            # Check player bullets hitting boss2
-            hits2 = pygame.sprite.spritecollide(self._boss_ref2, self.bullets, False)
-            for b in hits2:
-                dmg = getattr(b, 'damage', 10)
-                self._boss_ref2.hit(dmg)
-                self.stats.record_damage_dealt(dmg)
-                if not getattr(b, 'piercing', False):
-                    b.kill()
-                if self._boss_ref2.hp <= 0:
-                    cx, cy = self._boss_ref2.rect.center
-                    for _ in range(4):
-                        self.explosions.add(Explosion(cx + ((_-2)*25), cy, size=50, color=RED))
-                    self.player.score += self._boss_ref2.SCORE // 2
-                    self._award_credits(max(50, self._boss_ref2.SCORE // 40))
-                    from core.audio import AudioEngine
-                    AudioEngine().play('boss_explosion')
-                    self.camera_shake.trigger(22, 12)
-                    self._boss_ref2.kill()
-                    self._boss_ref2 = None
-                    break
 
         if signal == 'upgrade':
             if self.game_mode == 'campaign':
@@ -552,7 +531,7 @@ class Game:
 
     def _on_enemy_killed(self, enemy):
         cx, cy = enemy.rect.center
-        self.explosions.add(Explosion(cx, cy, size=30, color=ORANGE))
+        self.explosions.add(Explosion(cx, cy, radius=30, color=ORANGE))
         p = Particle(cx, cy, ORANGE, count=14, speed_range=(1, 5))
         self.particles.append(p)
         pts = enemy.SCORE
@@ -570,24 +549,34 @@ class Game:
         self.hud.add_kill_floater(cx, cy - 20, pts)
         enemy.kill()
 
-    def _on_boss_killed(self):
-        if self._boss_ref:
-            cx, cy = self._boss_ref.rect.center
+    def _on_boss_killed(self, boss=None):
+        target = boss or self._boss_ref
+        if target and target.alive():
+            is_secondary = (target is getattr(self, '_boss_ref2', None))
+            cx, cy = target.rect.center
             for _ in range(6):
-                self.explosions.add(Explosion(cx + ((_-3)*30), cy, size=60, color=RED))
-            self.player.score += self._boss_ref.SCORE
-            self._award_credits(max(100, self._boss_ref.SCORE // 25))
+                self.explosions.add(Explosion(cx + ((_-3)*30), cy, radius=60, color=RED))
+            score_val = target.SCORE // 2 if is_secondary else target.SCORE
+            self.player.score += score_val
+            self._award_credits(max(60, score_val // 30))
             from core.audio import AudioEngine
             AudioEngine().play('boss_explosion')
             self.stats.record_boss_killed()
-            boss_id = getattr(self._boss_ref, 'NAME', 'Vanguard').lower().split()[0]
+            boss_id = getattr(target, 'NAME', 'Vanguard').lower().split()[0]
             self._unlock_codex(boss_id)
             if hasattr(self, 'achievements_mgr'):
                 self.achievements_mgr.check_game_events(self)
             if self.game_mode == 'time_attack':
-                self.wave_mgr.add_time_bonus(600)
-            self._boss_ref.kill()
-            self._boss_ref = None
+                self.wave_mgr.add_time_bonus(300 if is_secondary else 600)
+            target.kill()
+            if target is self._boss_ref:
+                self._boss_ref = None
+                if self.wave_mgr.boss is target:
+                    self.wave_mgr.boss = None
+            if target is getattr(self, '_boss_ref2', None):
+                self._boss_ref2 = None
+                if getattr(self.wave_mgr, 'boss2', None) is target:
+                    self.wave_mgr.boss2 = None
             self.flash.trigger(WHITE, 14)
             self.camera_shake.trigger(28, 16)
 
@@ -752,10 +741,7 @@ class Game:
         self.hud.update(self.player.score)
         self.hud.draw(self.screen, self.player, self.wave_mgr)
         if self.wave_mgr.boss_active:
-            if self._boss_ref and self._boss_ref.alive():
-                self.hud.draw_boss_bar(self.screen, self._boss_ref)
-            if hasattr(self, '_boss_ref2') and self._boss_ref2 and self._boss_ref2.alive():
-                self.hud.draw_boss_bar(self.screen, self._boss_ref2, offset_y=-125)
+            self.hud.draw_boss_bars(self.screen, self._boss_ref, getattr(self, '_boss_ref2', None))
         self._pause_button.draw(self.screen)
         # Wave banner
         if self._wave_banner_timer > 0:

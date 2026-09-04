@@ -75,3 +75,31 @@ class Assets:
             if candidate.get_width() <= max_width:
                 return candidate
         return rendered
+
+    def render_wrap(self, key, text, color, max_width, line_spacing=4, antialias=True):
+        """Word-wrap *text* to fit within *max_width* pixels and return a surface
+        tall enough for all lines.  Never overflows horizontally."""
+        font = self.font(key)
+        words = str(text).split(' ')
+        lines = []
+        current = ''
+        for word in words:
+            candidate = (current + ' ' + word).strip()
+            if font.size(candidate)[0] <= max_width:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current)
+                current = word  # single long word: accept as-is
+        if current:
+            lines.append(current)
+
+        if not lines:
+            return pygame.Surface((1, 1), pygame.SRCALPHA)
+
+        line_h = font.get_height()
+        total_h = len(lines) * line_h + max(0, len(lines) - 1) * line_spacing
+        surf = pygame.Surface((max_width, total_h), pygame.SRCALPHA)
+        for i, line in enumerate(lines):
+            surf.blit(font.render(line, antialias, color), (0, i * (line_h + line_spacing)))
+        return surf

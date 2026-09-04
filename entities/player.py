@@ -6,6 +6,7 @@ from core.settings import (W, H, P_LIVES, P_MAX_SHIELD, P_SHIELD_REGEN,
                             B_SPEED, B_DAMAGE, CYAN, BLUE, GREEN, YELLOW,
                             ORANGE, WHITE, RED, PURPLE)
 from entities.bullet import PlayerBullet, Missile
+from entities.effects import ThrusterParticle, SmokeParticle, SparkParticle
 from systems.loadout import SKINS_BY_ID, PARTS_BY_ID
 
 
@@ -149,7 +150,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = max(10, min(W // 2 - self.rect.width, self.rect.x))
 
         # Spawn thruster exhaust particles
-        from entities.effects import ThrusterParticle, SmokeParticle, SparkParticle
         if random.random() < 0.8:
             self.thruster_particles.append(
                 ThrusterParticle(self.rect.left + 5, self.rect.centery + random.randint(-4, 4))

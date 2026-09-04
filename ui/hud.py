@@ -138,8 +138,80 @@ class HUD:
             pill.blit(t_text, (22, ph // 2 - t_text.get_height() // 2))
             surf.blit(pill, (px, py))
 
+    def _draw_single_boss_bar(self, surf, boss, bx, by, bw, label_prefix=""):
+        if not boss or not boss.alive():
+            return
+        a = Assets()
+        total_h = 44
+        panel = pygame.Surface((bw, total_h), pygame.SRCALPHA)
+        panel.fill((18, 24, 28, 215))
+        pygame.draw.rect(panel, (*RETRO_TERRA, 220), (0, 0, bw, total_h), 2, border_radius=8)
+
+        # Title / Label
+        name_str = f"{label_prefix}{boss.NAME}".strip()
+        title_t = a.render_fit(['small', 'tiny'], name_str, RETRO_AMBER, bw - 150)
+        panel.blit(title_t, (12, 5))
+
+        # HP numbers
+        hp_str = f"{int(boss.hp):,} / {int(boss.max_hp):,}"
+        hp_num_t = a.render('tiny', hp_str, RETRO_CREAM)
+        panel.blit(hp_num_t, (bw - hp_num_t.get_width() - 12, 7))
+
+        # Bars area
+        bar_x = 12
+        bar_w = bw - 24
+
+        # Shield bar (if max_shield > 0)
+        if getattr(boss, 'max_shield', 0) > 0:
+            sh_h = 4
+            sh_y = 23
+            sh_ratio = max(0.0, min(1.0, boss.shield / boss.max_shield))
+            pygame.draw.rect(panel, (25, 40, 55), (bar_x, sh_y, bar_w, sh_h), border_radius=2)
+            if sh_ratio > 0:
+                pygame.draw.rect(panel, CYAN, (bar_x, sh_y, int(bar_w * sh_ratio), sh_h), border_radius=2)
+            hp_y = 29
+            hp_h = 10
+        else:
+            hp_y = 24
+            hp_h = 13
+
+        # Hull HP bar
+        hp_ratio = max(0.0, min(1.0, boss.hp / boss.max_hp))
+        pygame.draw.rect(panel, (40, 20, 25), (bar_x, hp_y, bar_w, hp_h), border_radius=3)
+        if hp_ratio > 0:
+            phase_colors = [RETRO_CRIMSON, RETRO_TERRA, RETRO_AMBER, RETRO_CREAM]
+            p_idx = min(len(phase_colors) - 1, max(0, getattr(boss, 'phase', 1) - 1))
+            col = phase_colors[p_idx]
+            pygame.draw.rect(panel, col, (bar_x, hp_y, int(bar_w * hp_ratio), hp_h), border_radius=3)
+            # Subtle highlight sheen on upper half
+            pygame.draw.rect(panel, (255, 255, 255, 40), (bar_x, hp_y, int(bar_w * hp_ratio), hp_h // 2), border_radius=2)
+
+        surf.blit(panel, (bx, by))
+
+    def draw_boss_bars(self, surf, boss1, boss2=None):
+        b1_alive = boss1 and boss1.alive()
+        b2_alive = boss2 and boss2.alive()
+
+        by = H - 56
+        if b1_alive and b2_alive:
+            # Dual Bosses: Place side-by-side along bottom rim with zero obstruction
+            bw = 580
+            gap = 30
+            bx1 = W // 2 - bw - gap // 2
+            bx2 = W // 2 + gap // 2
+            self._draw_single_boss_bar(surf, boss1, bx1, by, bw, label_prefix="[ALPHA] ")
+            self._draw_single_boss_bar(surf, boss2, bx2, by, bw, label_prefix="[BETA] ")
+        elif b1_alive:
+            bw = 720
+            bx = W // 2 - bw // 2
+            self._draw_single_boss_bar(surf, boss1, bx, by, bw)
+        elif b2_alive:
+            bw = 720
+            bx = W // 2 - bw // 2
+            self._draw_single_boss_bar(surf, boss2, bx, by, bw, label_prefix="[TITAN] ")
+
     def draw_boss_bar(self, surf, boss, offset_y=0):
-        boss.draw_healthbar(surf, offset_y=offset_y)
+        self.draw_boss_bars(surf, boss)
 
     def draw_wave_banner(self, surf, sector, wave, timer, max_timer, mode='campaign'):
         """Flash warm retro wave announcement banner."""

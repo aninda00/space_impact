@@ -16,6 +16,7 @@ from core.settings import (W, H, TOTAL_SECTORS, BG, BLUE, CYAN, WHITE, GREY,
 from core.assets import Assets
 from systems.loadout import (SKINS, PART_CATEGORIES, DEFAULT_EQUIPPED_PARTS,
                              campaign_power, recommended_power)
+from systems.story import SECTOR_STORIES
 from ui.components import Button, Panel, draw_text_shadow, draw_glow_rect
 
 
@@ -50,7 +51,7 @@ class MainMenu:
 
         # Subscreen Navigation
         self._btn_back = Button(50, bar_y, 160, 52, "< BACK", color=RETRO_MOSS, font_key='small')
-        self._btn_play = Button(cx - 160, H - 180, 320, 64, "START MISSION", color=RETRO_SAGE, font_key='medium')
+        self._btn_play = Button(cx - 210, 730, 420, 60, "START MISSION", color=RETRO_SAGE, font_key='medium')
         self._btn_continue = None
 
         # Shipyard Controls (Placed strictly inside respective cards)
@@ -73,6 +74,7 @@ class MainMenu:
         self._selected_part_indices = {cat['id']: 0 for cat in PART_CATEGORIES}
         self._unlocked_sector = 1
         self._completed_sector = 0
+        self._selected_sector = 1
         self._tick = 0
         self._stars = None
         self._build_category_buttons()
@@ -90,20 +92,22 @@ class MainMenu:
     def set_campaign_progress(self, unlocked_sector=1, completed_sector=0):
         self._unlocked_sector = max(1, min(TOTAL_SECTORS, int(unlocked_sector or 1)))
         self._completed_sector = max(0, min(TOTAL_SECTORS, int(completed_sector or 0)))
+        if not hasattr(self, '_selected_sector') or self._selected_sector > self._unlocked_sector:
+            self._selected_sector = self._unlocked_sector
         
         self._level_buttons = []
         cols = 7
-        size = 86
-        gap = 18
+        size = 84
+        gap = 16
         start_x = W // 2 - (cols * size + (cols - 1) * gap) // 2
-        start_y = 280
+        start_y = 265
 
         for idx in range(TOTAL_SECTORS):
             row = idx // cols
             col = idx % cols
             sector = idx + 1
             x = start_x + col * (size + gap)
-            y = start_y + row * (size + gap + 35)
+            y = start_y + row * (size + gap + 30)
 
             unlocked = sector <= self._unlocked_sector
             completed = sector <= self._completed_sector
@@ -180,9 +184,13 @@ class MainMenu:
         if self._screen == 'campaign':
             for sector, unlocked, btn in self._level_buttons:
                 if unlocked and btn.handle_event(event):
-                    return ('campaign_level', sector)
+                    if self._selected_sector == sector:
+                        return ('campaign_level', sector)
+                    self._selected_sector = sector
+                    return None
             if self._btn_play.handle_event(event):
-                return ('campaign_level', self._unlocked_sector)
+                sec = getattr(self, '_selected_sector', self._unlocked_sector)
+                return ('campaign_level', sec)
 
         elif self._screen == 'shop':
             for i, (cat_id, btn) in enumerate(self._category_buttons):
@@ -248,7 +256,7 @@ class MainMenu:
         cx = W // 2
         
         panel_y = 190 if not self._btn_continue else 170
-        panel_h = 425 if not self._btn_continue else 445
+        panel_h = 520 if not self._btn_continue else 540
         hub_panel = Panel(cx - 410, panel_y, 820, panel_h, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         hub_panel.draw(surf)
 
@@ -276,6 +284,39 @@ class MainMenu:
         self._btn_diff_bullethell.draw(surf)
         self._btn_diff_doubleboss.draw(surf)
 
+        # Challenge Modifier Intel Card (explains exactly what each preset does)
+        preset_info = {
+            'standard': {
+                'title': "STANDARD PROTOCOL — 1.0X REWARDS",
+                'desc': "Balanced simulation. Standard enemy hull durability, default swarm speed, single sector titan.",
+                'color': RETRO_SAGE,
+            },
+            'hardcore': {
+                'title': "HARDCORE SPEC — +50% BONUS CREDITS (1.5X)",
+                'desc': "High-intensity threat: +30% enemy HP, +15% velocity, +25% spawn rate, +40% boss resilience.",
+                'color': RETRO_TERRA,
+            },
+            'bullet_hell': {
+                'title': "BULLET HELL DENSITY — +50% BONUS CREDITS (1.5X)",
+                'desc': "Heavy barrage volume: Enemies fire denser ring volleys with +45% faster swarm rate.",
+                'color': RETRO_CRIMSON,
+            },
+            'double_boss': {
+                'title': "DOUBLE BOSS SURGE — +25% BONUS CREDITS (1.25X)",
+                'desc': "Twin Titans Protocol: Spawns two sector bosses simultaneously on split upper & lower flight lanes. Defeat both to clear.",
+                'color': RETRO_AMBER,
+            },
+        }
+        info = preset_info.get(self._difficulty, preset_info['standard'])
+        info_panel = pygame.Surface((728, 88), pygame.SRCALPHA)
+        info_panel.fill((18, 24, 26, 200))
+        pygame.draw.rect(info_panel, (*info['color'], 180), (0, 0, 728, 88), 1, border_radius=6)
+        t_header = a.render('small', info['title'], info['color'])
+        t_body = a.render_wrap('tiny', info['desc'], WHITE, 700)
+        info_panel.blit(t_header, (14, 10))
+        info_panel.blit(t_body, (14, 38))
+        surf.blit(info_panel, (cx - 364, 595))
+
         # Bottom Command Bar
         bot_panel = Panel(cx - 470, H - 105, 940, 80, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         bot_panel.draw(surf)
@@ -286,20 +327,62 @@ class MainMenu:
 
     def _draw_campaign(self, surf, a):
         cx = W // 2
-        p = Panel(cx - 520, 200, 1040, 580, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        p = Panel(cx - 520, 180, 1040, 770, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         p.draw(surf)
 
         t = a.render('large', "TACTICAL SECTOR CAMPAIGN", RETRO_AMBER)
-        surf.blit(t, (cx - t.get_width() // 2, 220))
+        surf.blit(t, (cx - t.get_width() // 2, 205))
+        sub = a.render('small', "SELECT AN UNLOCKED SECTOR TO VIEW INTEL AND DEPLOY", RETRO_CREAM)
+        surf.blit(sub, (cx - sub.get_width() // 2, 238))
 
         for sector, unlocked, btn in self._level_buttons:
+            if sector == self._selected_sector:
+                pygame.draw.rect(surf, RETRO_AMBER, btn.rect.inflate(10, 10), 3, border_radius=btn.radius + 4)
+                pygame.draw.rect(surf, RETRO_CREAM, btn.rect.inflate(4, 4), 1, border_radius=btn.radius + 2)
             btn.draw(surf)
             lbl_col = RETRO_SAGE if sector <= self._completed_sector else (RETRO_CREAM if unlocked else GREY)
             status = "CLEAR" if sector <= self._completed_sector else ("READY" if unlocked else "LOCK")
             st_t = a.render('tiny', status, lbl_col)
             surf.blit(st_t, (btn.rect.centerx - st_t.get_width() // 2, btn.rect.bottom + 4))
 
+        # Selected Sector Briefing Card
+        card_y = 525
+        card_h = 285
+        b_panel = Panel(cx - 460, card_y, 920, card_h, color=(18, 24, 26), border_color=RETRO_MOSS, alpha=230)
+        b_panel.draw(surf)
+
+        st = SECTOR_STORIES.get(self._selected_sector, {})
+        sec_title = st.get('title', f"SECTOR {self._selected_sector}")
+        sec_sub = st.get('subtitle', "")
+        boss_name = st.get('boss_name', "UNKNOWN THREAT")
+        boss_desc = st.get('boss_desc', "")
+
+        t_st = a.render('medium', sec_title, RETRO_AMBER)
+        surf.blit(t_st, (cx - t_st.get_width() // 2, card_y + 18))
+        if sec_sub:
+            t_sub = a.render('small', f"— {sec_sub} —", RETRO_CREAM)
+            surf.blit(t_sub, (cx - t_sub.get_width() // 2, card_y + 48))
+
+        pygame.draw.line(surf, RETRO_MOSS, (cx - 380, card_y + 78), (cx + 380, card_y + 78), 1)
+
+        t_boss = a.render_fit(['small', 'tiny'], f"PRIMARY TARGET: {boss_name.upper()}  —  {boss_desc}", RETRO_CRIMSON, 860)
+        surf.blit(t_boss, (cx - t_boss.get_width() // 2, card_y + 92))
+
+        power = campaign_power(self._equipped_parts)
+        rec = recommended_power(self._selected_sector)
+        pow_col = RETRO_SAGE if power >= rec else RETRO_TERRA
+        t_pow = a.render('small', f"FLEET POWER: {power}   |   RECOMMENDED: {rec}", pow_col)
+        surf.blit(t_pow, (cx - t_pow.get_width() // 2, card_y + 124))
+
+        status_text = "STATUS: SECTOR PREVIOUSLY CLEARED (REPLAY AVAILABLE)" if self._selected_sector <= self._completed_sector else "STATUS: MISSION ACTIVE & READY FOR LAUNCH"
+        status_col = RETRO_SAGE if self._selected_sector <= self._completed_sector else RETRO_CREAM
+        t_stat = a.render('tiny', status_text, status_col)
+        surf.blit(t_stat, (cx - t_stat.get_width() // 2, card_y + 155))
+
+        self._btn_play.rect = pygame.Rect(cx - 210, card_y + 195, 420, 64)
+        self._btn_play.text = f"START MISSION  (SECTOR {self._selected_sector})"
         self._btn_play.draw(surf)
+
         self._btn_back.draw(surf)
 
     def _draw_shop(self, surf, a, credits):

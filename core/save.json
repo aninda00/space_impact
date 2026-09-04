@@ -3,7 +3,7 @@
   "campaign_unlocked_sector": 9,
   "campaign_completed_sector": 8,
   "campaign_rewarded_sector": 8,
-  "credits": 12282,
+  "credits": 14545,
   "owned_skins": [
     "classic"
   ],
@@ -42,8 +42,8 @@
     "wing_frame": "wing_frame_stock"
   },
   "sfx_volume": 0.7,
-  "music_volume": 0.5,
-  "audio_muted": true,
+  "music_volume": 0.0,
+  "audio_muted": false,
   "control_scheme": "hybrid",
   "keybinds": {
     "up": "W",

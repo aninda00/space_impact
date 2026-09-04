@@ -35,6 +35,7 @@ class Boss(pygame.sprite.Sprite):
         self.target_x= W - self.SIZE[0] - 40
         self.attack_timer = 0
         self.pattern_idx  = 0
+        self.lane_offset_y = 0
         self._build_image()
         self.rect    = self.image.get_rect(midleft=(W + self.SIZE[0], H // 2))
         self.base_image = self.image.copy()
@@ -61,6 +62,8 @@ class Boss(pygame.sprite.Sprite):
         # Entry slide-in
         if self.entry:
             self.rect.x -= 6
+            lane = getattr(self, 'lane_offset_y', 0)
+            self.rect.centery = H // 2 + lane
             if self.rect.right <= self.target_x + self.SIZE[0]:
                 self.entry = False
             return []
@@ -94,8 +97,9 @@ class Boss(pygame.sprite.Sprite):
         return []
 
     def _move(self):
-        self.rect.y = int(H // 2 - self.SIZE[1] // 2
-                          + math.sin(self.tick * 0.025) * 120)
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        amp = 70 if getattr(self, 'lane_offset_y', 0) else 120
+        self.rect.y = int(base_y + math.sin(self.tick * 0.025) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _check_phase(self):
@@ -264,7 +268,13 @@ class Phantom(Boss):
     def _move(self):
         self.teleport_timer -= 1
         if self.teleport_timer <= 0:
-            self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
+            lane = getattr(self, 'lane_offset_y', 0)
+            if lane < 0:
+                self.rect.y = random.randint(20, max(25, H // 2 - self.SIZE[1] - 30))
+            elif lane > 0:
+                self.rect.y = random.randint(H // 2 + 30, H - self.SIZE[1] - 20)
+            else:
+                self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
             self.teleport_timer = 150 if self.phase == 1 else 90
 
     def _attack(self):
@@ -327,8 +337,10 @@ class Leviathan(Boss):
         self.rect = self.image.get_rect()
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        amp = 75 if getattr(self, 'lane_offset_y', 0) else 150
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.02) * 60)
-        self.rect.y = int(H//2 - self.SIZE[1]//2 + math.sin(self.tick * 0.03) * 150)
+        self.rect.y = int(base_y + math.sin(self.tick * 0.03) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
@@ -473,10 +485,11 @@ class Overlord(Boss):
         self.rect = self.image.get_rect()
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         speed = 0.02 + (self.phase - 1) * 0.01
-        amp   = 100 + (self.phase - 1) * 50
+        amp   = (55 if getattr(self, 'lane_offset_y', 0) else 100) + (self.phase - 1) * 35
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.015) * 80)
-        self.rect.y = int(H//2 - self.SIZE[1]//2 + math.sin(self.tick * speed) * amp)
+        self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
@@ -562,9 +575,11 @@ class VoidReaper(Boss):
         self.rect = self.image.get_rect()
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
         speed = 0.028 + (self.phase - 1) * 0.008
+        amp = 90 if getattr(self, 'lane_offset_y', 0) else 210
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.035) * (70 + self.phase * 12))
-        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * speed) * 210)
+        self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
@@ -632,8 +647,10 @@ class StarDevourer(Boss):
         self.rect = self.image.get_rect()
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        amp = (70 if getattr(self, 'lane_offset_y', 0) else 150) + self.phase * 20
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.012) * 95)
-        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.022) * (150 + self.phase * 25))
+        self.rect.y = int(base_y + math.sin(self.tick * 0.022) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
@@ -647,14 +664,82 @@ class StarDevourer(Boss):
             bullets.append(EnemyBullet(x, y,
                 vx=int(math.cos(angle + math.pi) * spd),
                 vy=int(math.sin(angle) * spd),
-                color=ORANGE))
-        if self.phase >= 2:
-            for off in [-80, 0, 80]:
-                bullets.append(EnemyBullet(x, y + off, vx=-10, vy=0, color=GOLD))
+                color=GOLD))
         return bullets
 
     def _attack_rate(self):
-        return max(24, 58 - (self.phase - 1) * 10)
+        return max(24, 50 - self.phase * 8)
+
+
+class EclipseCore(Boss):
+    """Sector 8 — darkness pulse, bullet hell"""
+    NAME   = "ECLIPSE CORE"
+    HP     = 135000
+    SHIELD = 65000
+    SCORE  = 40000
+    SIZE   = (380, 240)
+    COLOR  = (40, 20, 60)
+    PHASES = 3
+
+    def _check_phase(self):
+        r = self.hp_ratio()
+        if r < 0.33 and self.phase < 3:
+            self.phase = 3
+        elif r < 0.66 and self.phase < 2:
+            self.phase = 2
+
+    def _build_image(self):
+        w, h = self.SIZE
+        self.image = pygame.Surface((w, h), pygame.SRCALPHA)
+        c = self.COLOR
+        dark = (15, 6, 24)
+        core = (255, 60, 120)
+        pygame.draw.polygon(self.image, dark, [
+            (0, h // 2), (52, h // 4), (130, 4), (w - 74, h // 6),
+            (w - 4, h // 2), (w - 74, 5 * h // 6), (130, h - 4), (52, 3 * h // 4),
+        ])
+        pygame.draw.ellipse(self.image, c, (28, h // 6, w - 80, 2 * h // 3))
+        for x in [74, 124, 174, 224, 274]:
+            pygame.draw.ellipse(self.image, (65, 25, 95), (x, h // 2 - 48, 74, 96))
+        for yy in [h // 2 - 58, h // 2, h // 2 + 58]:
+            pygame.draw.polygon(self.image, core, [(38, yy), (74, yy - 12), (74, yy + 12)])
+        _draw_spines(self.image, dark, w, h, [(128, 20, 48), (200, 20, 44), (272, 17, 36), (332, 14, 28)], True)
+        _draw_spines(self.image, dark, w, h, [(128, 20, 48), (200, 20, 44), (272, 17, 36), (332, 14, 28)], False)
+        _draw_eye(self.image, 128, h // 2 - 24, 23, 15, core)
+        _draw_eye(self.image, 128, h // 2 + 24, 23, 15, core)
+        pygame.draw.ellipse(self.image, (70, 0, 34), (184, h // 2 - 50, 118, 100))
+        pygame.draw.ellipse(self.image, core, (214, h // 2 - 25, 58, 50))
+        _draw_engine(self.image, w, h, GOLD)
+        self.rect = self.image.get_rect()
+
+    def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        amp = (65 if getattr(self, 'lane_offset_y', 0) else 140) + self.phase * 15
+        speed = 0.018 + (self.phase - 1) * 0.005
+        self.rect.x = int(self.target_x + math.sin(self.tick * 0.018) * 110)
+        self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
+        self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
+
+    def _attack(self):
+        x, y = self.rect.left, self.rect.centery
+        bullets = []
+        self.sub_attack = (self.sub_attack + 1) % 4
+        if self.sub_attack == 0:
+            for a in range(-5, 6):
+                bullets.append(EnemyBullet(x, y, vx=-9, vy=a, color=RED))
+        elif self.sub_attack == 1:
+            for off in [-90, -45, 0, 45, 90]:
+                bullets.append(EnemyBullet(x, y + off, vx=-11, vy=0, color=PINK))
+        elif self.sub_attack == 2:
+            for i in range(8):
+                ang = i * (math.pi / 4)
+                bullets.append(EnemyBullet(x, y, vx=int(math.cos(ang) * 7), vy=int(math.sin(ang) * 7), color=PURPLE))
+        else:
+            bullets.append(EnemyBullet(x, y, vx=-12, vy=0, color=WHITE))
+        return bullets
+
+    def _attack_rate(self):
+        return max(20, 48 - self.phase * 7)
 
 
 class OblivionCore(Boss):
@@ -712,9 +797,11 @@ class OblivionCore(Boss):
         self.rect = self.image.get_rect()
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        amp = (65 if getattr(self, 'lane_offset_y', 0) else 140) + self.phase * 15
         speed = 0.018 + (self.phase - 1) * 0.005
         self.rect.x = int(self.target_x + math.sin(self.tick * 0.018) * 110)
-        self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * speed) * (140 + self.phase * 18))
+        self.rect.y = int(base_y + math.sin(self.tick * speed) * amp)
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
@@ -890,24 +977,32 @@ class DataBoss(Boss):
         return accents.get(self.spec.id, YELLOW)
 
     def _move(self):
+        base_y = H // 2 - self.SIZE[1] // 2 + getattr(self, 'lane_offset_y', 0)
+        lane = getattr(self, 'lane_offset_y', 0)
+        amp_scale = 0.55 if lane else 1.0
         if self.spec.movement == "teleport":
             self.teleport_timer -= 1
             if self.teleport_timer <= 0:
-                self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
+                if lane < 0:
+                    self.rect.y = random.randint(20, max(25, H // 2 - self.SIZE[1] - 30))
+                elif lane > 0:
+                    self.rect.y = random.randint(H // 2 + 30, H - self.SIZE[1] - 20)
+                else:
+                    self.rect.y = random.randint(20, H - self.SIZE[1] - 20)
                 self.teleport_timer = max(70, 160 - self.phase * 35)
             return
 
         if self.spec.movement == "drift":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.016) * (54 + self.phase * 18))
-            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.025) * (110 + self.phase * 36))
+            self.rect.y = int(base_y + math.sin(self.tick * 0.025) * ((110 + self.phase * 36) * amp_scale))
         elif self.spec.movement == "blade":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.035) * (70 + self.phase * 12))
-            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.03) * 210)
+            self.rect.y = int(base_y + math.sin(self.tick * 0.03) * (210 * amp_scale))
         elif self.spec.movement == "heavy":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.014) * 95)
-            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.02) * (135 + self.phase * 22))
+            self.rect.y = int(base_y + math.sin(self.tick * 0.02) * ((135 + self.phase * 22) * amp_scale))
         else:
-            self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.025) * 120)
+            self.rect.y = int(base_y + math.sin(self.tick * 0.025) * (120 * amp_scale))
         self.rect.y = max(10, min(H - self.SIZE[1] - 10, self.rect.y))
 
     def _attack(self):
