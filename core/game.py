@@ -419,7 +419,6 @@ class Game:
         for b in self.bullets:
             if isinstance(b, Missile):
                 targets = list(self.enemies)
-                if self.wave_mgr.boss_active and self._boss_ref and self._boss_ref.alive():
                 if self._boss_ref and self._boss_ref.alive():
                     targets.append(self._boss_ref)
                 if getattr(self, '_boss_ref2', None) and self._boss_ref2.alive():
@@ -446,22 +445,10 @@ class Game:
         # ── Collisions ────────────────────────────────────────────────────
         kills_this_frame = 0
 
-        # Player bullets ↔ Enemies
-        if self.wave_mgr.boss_active and self._boss_ref:
         # Player bullets ↔ Bosses or Regular Enemies
         if self.wave_mgr.boss_active:
             active_bosses = [boss for boss in (self._boss_ref, getattr(self, '_boss_ref2', None)) if boss and boss.alive()]
             for b in list(self.bullets):
-                if not self._boss_ref or not self._boss_ref.alive():
-                    break
-                if b.rect.colliderect(self._boss_ref.rect):
-                    is_missile = isinstance(b, Missile)
-                    self.stats.record_hit(b.damage, is_missile=is_missile)
-                    if not b.piercing:
-                        b.kill()
-                    dead = self._boss_ref.hit(b.damage)
-                    if dead:
-                        self._on_boss_killed()
                 for boss in active_bosses:
                     if not boss.alive():
                         continue
@@ -482,7 +469,6 @@ class Game:
                     is_missile = isinstance(b, Missile)
                     self.stats.record_hit(b.damage, is_missile=is_missile)
                     dead = enemy.hit(b.damage)
-                    if not b.piercing:
                     if not getattr(b, 'piercing', False):
                         b.kill()
                     if dead:
@@ -617,7 +603,7 @@ class Game:
                 self.wave_mgr.add_time_bonus(600)
             self._boss_ref.kill()
             self._boss_ref = None
-                self.wave_mgr.add_time_bonus(300 if is_secondary else 600)
+            self.wave_mgr.add_time_bonus(300 if is_secondary else 600)
             target.kill()
             if target is self._boss_ref:
                 self._boss_ref = None
@@ -791,10 +777,6 @@ class Game:
         self.hud.update(self.player.score)
         self.hud.draw(self.screen, self.player, self.wave_mgr)
         if self.wave_mgr.boss_active:
-            if self._boss_ref and self._boss_ref.alive():
-                self.hud.draw_boss_bar(self.screen, self._boss_ref)
-            if hasattr(self, '_boss_ref2') and self._boss_ref2 and self._boss_ref2.alive():
-                self.hud.draw_boss_bar(self.screen, self._boss_ref2, offset_y=-125)
             self.hud.draw_boss_bars(self.screen, self._boss_ref, getattr(self, '_boss_ref2', None))
         self._pause_button.draw(self.screen)
         # Wave banner

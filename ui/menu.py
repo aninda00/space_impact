@@ -50,7 +50,7 @@ class MainMenu:
         self._btn_quit     = Button(cx + 240, bar_y, 210, 54, "EXIT GAME", color=RETRO_CRIMSON, hover_color=RETRO_TERRA, font_key='small')
 
         # Subscreen Navigation
-        self._btn_back = Button(50, bar_y, 160, 52, "< BACK", color=RETRO_MOSS, font_key='small')
+        self._btn_back = Button(50, bar_y + 12, 160, 52, "< BACK", color=RETRO_MOSS, font_key='small')
         self._btn_play = Button(cx - 210, 730, 420, 60, "START MISSION", color=RETRO_SAGE, font_key='medium')
         self._btn_continue = None
 
@@ -100,7 +100,7 @@ class MainMenu:
         size = 84
         gap = 16
         start_x = W // 2 - (cols * size + (cols - 1) * gap) // 2
-        start_y = 265
+        start_y = 280
 
         for idx in range(TOTAL_SECTORS):
             row = idx // cols
@@ -334,7 +334,7 @@ class MainMenu:
         t = a.render('large', "TACTICAL SECTOR CAMPAIGN", RETRO_AMBER)
         surf.blit(t, (cx - t.get_width() // 2, 205))
         sub = a.render('small', "SELECT AN UNLOCKED SECTOR TO VIEW INTEL AND DEPLOY", RETRO_CREAM)
-        surf.blit(sub, (cx - sub.get_width() // 2, 238))
+        surf.blit(sub, (cx - sub.get_width() // 2, 245))
 
         for sector, unlocked, btn in self._level_buttons:
             if sector == self._selected_sector:
@@ -347,7 +347,7 @@ class MainMenu:
             surf.blit(st_t, (btn.rect.centerx - st_t.get_width() // 2, btn.rect.bottom + 4))
 
         # Selected Sector Briefing Card
-        card_y = 525
+        card_y = 550
         card_h = 285
         b_panel = Panel(cx - 460, card_y, 920, card_h, color=(18, 24, 26), border_color=RETRO_MOSS, alpha=230)
         b_panel.draw(surf)
@@ -380,7 +380,7 @@ class MainMenu:
         t_stat = a.render('tiny', status_text, status_col)
         surf.blit(t_stat, (cx - t_stat.get_width() // 2, card_y + 155))
 
-        self._btn_play.rect = pygame.Rect(cx - 210, card_y + 195, 420, 64)
+        self._btn_play.rect = pygame.Rect(cx - 210, card_y + 190, 420, 64)
         self._btn_play.text = f"START MISSION  (SECTOR {self._selected_sector})"
         self._btn_play.draw(surf)
 

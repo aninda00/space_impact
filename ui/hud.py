@@ -191,25 +191,63 @@ class HUD:
     def draw_boss_bars(self, surf, boss1, boss2=None):
         b1_alive = boss1 and boss1.alive()
         b2_alive = boss2 and boss2.alive()
-
-        by = H - 56
+        if not b1_alive and not b2_alive:
+            return
+        W, H = surf.get_width(), surf.get_height()
+        bh = 48
+        by = H - bh - 16
         if b1_alive and b2_alive:
             # Dual Bosses: Place side-by-side along bottom rim with zero obstruction
-            bw = 580
-            gap = 30
+            bw = 520
+            gap = 20
             bx1 = W // 2 - bw - gap // 2
             bx2 = W // 2 + gap // 2
             self._draw_single_boss_bar(surf, boss1, bx1, by, bw, label_prefix="[ALPHA] ")
             self._draw_single_boss_bar(surf, boss2, bx2, by, bw, label_prefix="[BETA] ")
         elif b1_alive:
-            bw = 720
+            bw = 680
             bx = W // 2 - bw // 2
-            self._draw_single_boss_bar(surf, boss1, bx, by, bw)
+            self._draw_single_boss_bar(surf, boss1, bx, by, bw, bh, label_prefix="[TITAN] ")
         elif b2_alive:
             bw = 720
             bx = W // 2 - bw // 2
             self._draw_single_boss_bar(surf, boss2, bx, by, bw, label_prefix="[TITAN] ")
+    def _draw_single_boss_bar(self, surf, boss, x, y, w, h=48, label_prefix=""):
+            # Fall back dynamically across font attribute names used in HUD.__init__
+            font = getattr(self, 'font_small', getattr(self, 'small_font', getattr(self, 'font', None)))
+            if font is None:
+                font = pygame.font.SysFont("arial", 16)
 
+            panel_rect = pygame.Rect(x, y, w, h)
+            pygame.draw.rect(surf, (15, 15, 20, 230), panel_rect, border_radius=6)
+            pygame.draw.rect(surf, (180, 60, 60), panel_rect, width=1, border_radius=6)
+
+            name_str = f"{label_prefix}{getattr(boss, 'name', 'BOSS')}".upper()
+            name_surf = font.render(name_str, True, (240, 190, 80))
+            surf.blit(name_surf, (x + 10, y + 6))
+
+            hp_pct = max(0.0, min(1.0, boss.hp / boss.max_hp))
+            hp_str = f"{int(boss.hp):,} / {int(boss.max_hp):,}"
+            hp_surf = font.render(hp_str, True, (220, 220, 220))
+            surf.blit(hp_surf, (x + w - hp_surf.get_width() - 10, y + 6))
+
+            bar_x = x + 10
+            bar_y = y + 28
+            bar_w = w - 20
+            bar_h = 10
+
+            pygame.draw.rect(surf, (40, 20, 20), (bar_x, bar_y, bar_w, bar_h), border_radius=3)
+
+            fill_w = int(bar_w * hp_pct)
+            if fill_w > 0:
+                pygame.draw.rect(surf, (220, 60, 60), (bar_x, bar_y, fill_w, bar_h), border_radius=3)
+            shield = getattr(boss, 'shield', 0)
+            max_shield = getattr(boss, 'max_shield', getattr(boss, 'shield_max', 0))
+            if shield > 0 and max_shield > 0:
+                shield_pct = max(0.0, min(1.0, shield / max_shield))
+                shield_w = int(bar_w * shield_pct)
+                if shield_w > 0:
+                    pygame.draw.rect(surf, (0, 200, 255), (bar_x, bar_y, shield_w, bar_h), border_radius=3)
     def draw_boss_bar(self, surf, boss, offset_y=0):
         boss.draw_healthbar(surf, offset_y=offset_y)
         self.draw_boss_bars(surf, boss)
@@ -232,4 +270,4 @@ class HUD:
         panel.blit(t1, (310 - t1.get_width() // 2, 20))
         panel.blit(t2, (310 - t2.get_width() // 2, 75))
         
-        surf.blit(panel, (W // 2 - 310, H // 2 - 60))
+        surf.blit(panel, (surf.get_width() // 2 - 310, surf.get_height() // 2 - 60))

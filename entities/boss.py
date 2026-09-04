@@ -676,12 +676,10 @@ class StarDevourer(Boss):
         if self.phase >= 2:
             for off in [-80, 0, 80]:
                 bullets.append(EnemyBullet(x, y + off, vx=-10, vy=0, color=GOLD))
-                color=GOLD))
         return bullets
 
     def _attack_rate(self):
         return max(24, 58 - (self.phase - 1) * 10)
-        return max(24, 50 - self.phase * 8)
 
 
 class EclipseCore(Boss):
@@ -1007,7 +1005,9 @@ class DataBoss(Boss):
                 self.teleport_timer = max(70, 160 - self.phase * 35)
             return
 
-        if self.spec.movement == "drift":
+        if self.spec.movement == "sine":
+            self.rect.y = int(base_y + math.sin(self.tick * 0.025) * (120 * amp_scale))
+        elif self.spec.movement == "drift":
             self.rect.x = int(self.target_x + math.sin(self.tick * 0.016) * (54 + self.phase * 18))
             self.rect.y = int(H // 2 - self.SIZE[1] // 2 + math.sin(self.tick * 0.025) * (110 + self.phase * 36))
             self.rect.y = int(base_y + math.sin(self.tick * 0.025) * ((110 + self.phase * 36) * amp_scale))
