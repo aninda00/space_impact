@@ -263,8 +263,8 @@ class Player(pygame.sprite.Sprite):
             pygame.draw.ellipse(shield_surf, (*CYAN, s_alpha), shield_surf.get_rect(), 2)
             surf.blit(shield_surf, (self.rect.x - 12, self.rect.y - 10))
 
-        self._draw_lives_indicator(surf)
+    #     self._draw_lives_indicator(surf)
 
-    def _draw_lives_indicator(self, surf):
-        for i in range(self.lives):
-            surf.blit(self.mini_image, (14 + i * 62, H - 42))
+    # def _draw_lives_indicator(self, surf):
+    #     for i in range(self.lives):
+    #         surf.blit(self.mini_image, (14 + i * 62, H - 42))

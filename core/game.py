@@ -1025,7 +1025,7 @@ class Game:
         return self.saver.read()
 
     def _write_save_data(self, data):
-        self.saver.write(data)
+        self.saver.update(data)
 
     def _clear_progress(self):
         try:
