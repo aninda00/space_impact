@@ -84,10 +84,26 @@ class MainMenu:
 
     def set_has_save(self, has_save):
         cx = W // 2
+        y_offset = 0  # Initialize default offset
+
         if has_save:
             self._btn_continue = Button(cx - 364, 230, 728, 64, "RESUME CAMPAIGN", color=RETRO_SAGE, subtext="CONTINUE SAVED MISSION", font_key='medium')
         else:
             self._btn_continue = None
+            y_offset = -15  # Slid up to take the exact spot of the Resume button
+
+        # Update button vertical positions
+        self._btn_campaign.rect.top    = 310 + y_offset
+        self._btn_endless.rect.top     = 310 + y_offset
+        self._btn_boss_rush.rect.top   = 398 + y_offset
+        self._btn_survival.rect.top    = 398 + y_offset
+        self._btn_time_attack.rect.top = 398 + y_offset
+
+        # Update challenge selector vertical positions
+        self._btn_diff_standard.rect.top   = 525 + y_offset
+        self._btn_diff_hardcore.rect.top   = 525 + y_offset
+        self._btn_diff_bullethell.rect.top = 525 + y_offset
+        self._btn_diff_doubleboss.rect.top = 525 + y_offset
 
     def set_campaign_progress(self, unlocked_sector=1, completed_sector=0):
         self._unlocked_sector = max(1, min(TOTAL_SECTORS, int(unlocked_sector or 1)))
@@ -255,9 +271,11 @@ class MainMenu:
     def _draw_main(self, surf, a):
         cx = W // 2
         
-        panel_y = 210 if not self._btn_continue else 190
-        
-        panel_h = 540 if not self._btn_continue else 560
+        # Match panel top border tightly to the top button (20px padding)
+        y_off = 0 if self._btn_continue else -15        
+        panel_y = 240 if not self._btn_continue else 190
+        panel_h = 500 if not self._btn_continue else 560
+
         hub_panel = Panel(cx - 410, panel_y, 820, panel_h, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         hub_panel.draw(surf)
 
@@ -271,9 +289,9 @@ class MainMenu:
         self._btn_time_attack.draw(surf)
 
         # Challenge Presets Section Frame with generous breathing room
-        pygame.draw.line(surf, RETRO_MOSS, (cx - 364, 482), (cx + 364, 482), 1)
+        pygame.draw.line(surf, RETRO_MOSS, (cx - 364, 478 + y_off), (cx + 364, 478+ y_off), 1)
         mod_label = a.render('small', "CHALLENGE MODIFIER PRESET:", RETRO_CREAM)
-        surf.blit(mod_label, (cx - 364, 495))
+        surf.blit(mod_label, (cx - 364, 490 + y_off))
 
         self._btn_diff_standard.active   = (self._difficulty == 'standard')
         self._btn_diff_hardcore.active   = (self._difficulty == 'hardcore')
@@ -316,7 +334,7 @@ class MainMenu:
         t_body = a.render_wrap('tiny', info['desc'], WHITE, 700)
         info_panel.blit(t_header, (14, 10))
         info_panel.blit(t_body, (14, 38))
-        surf.blit(info_panel, (cx - 364, 605))
+        surf.blit(info_panel, (cx - 364, 595 + y_off))
 
         # Bottom Command Bar
         bot_panel = Panel(cx - 470, H - 105, 940, 80, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
