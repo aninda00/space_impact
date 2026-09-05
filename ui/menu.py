@@ -26,17 +26,17 @@ class MainMenu:
         cx = W // 2
         
         # Primary Game Modes
-        self._btn_campaign    = Button(cx - 364, 300, 356, 74, "CAMPAIGN", color=RETRO_MOSS, subtext="STORY // 13 SECTORS", font_key='large')
-        self._btn_endless     = Button(cx + 8,   300, 356, 74, "ENDLESS RUN", color=RETRO_MOSS, subtext="INFINITE WAVE SURGE", font_key='large')
+        self._btn_campaign    = Button(cx - 364, 310, 356, 74, "CAMPAIGN", color=RETRO_MOSS, subtext="STORY // 13 SECTORS", font_key='large')
+        self._btn_endless     = Button(cx + 8,   310, 356, 74, "ENDLESS RUN", color=RETRO_MOSS, subtext="INFINITE WAVE SURGE", font_key='large')
         
-        self._btn_boss_rush   = Button(cx - 364, 390, 232, 66, "BOSS RUSH", color=RETRO_TERRA, subtext="ARENA CLASH", font_key='medium')
-        self._btn_survival    = Button(cx - 116, 390, 232, 66, "SURVIVAL", color=RETRO_SAGE, subtext="TIMED EXTRACTION", font_key='medium')
-        self._btn_time_attack = Button(cx + 132, 390, 232, 66, "TIME ATTACK", color=RETRO_TERRA, subtext="SPEEDRUN HUNT", font_key='medium')
+        self._btn_boss_rush   = Button(cx - 364, 400, 232, 66, "BOSS RUSH", color=RETRO_TERRA, subtext="ARENA CLASH", font_key='medium')
+        self._btn_survival    = Button(cx - 116, 400, 232, 66, "SURVIVAL", color=RETRO_SAGE, subtext="TIMED EXTRACTION", font_key='medium')
+        self._btn_time_attack = Button(cx + 132, 400, 232, 66, "TIME ATTACK", color=RETRO_TERRA, subtext="SPEEDRUN HUNT", font_key='medium')
 
         # Challenge Preset Selector Row (56px tall for 100% text containment, with generous gap under label)
         self._difficulty = 'standard'
         dw = 172
-        dy = 525
+        dy = 535
         self._btn_diff_standard   = Button(cx - 364, dy, dw, 56, "STANDARD",    color=RETRO_MOSS, font_key='small', subtext="1.0x REWARD")
         self._btn_diff_hardcore   = Button(cx - 182, dy, dw, 56, "HARDCORE",    color=RETRO_TERRA, font_key='small', subtext="+50% CREDITS")
         self._btn_diff_bullethell = Button(cx,       dy, dw, 56, "BULLET HELL", color=RETRO_CRIMSON, font_key='small', subtext="RING VOLLEYS")
@@ -85,7 +85,7 @@ class MainMenu:
     def set_has_save(self, has_save):
         cx = W // 2
         if has_save:
-            self._btn_continue = Button(cx - 364, 215, 728, 64, "RESUME CAMPAIGN", color=RETRO_SAGE, subtext="CONTINUE SAVED MISSION", font_key='medium')
+            self._btn_continue = Button(cx - 364, 230, 728, 64, "RESUME CAMPAIGN", color=RETRO_SAGE, subtext="CONTINUE SAVED MISSION", font_key='medium')
         else:
             self._btn_continue = None
 
@@ -235,7 +235,7 @@ class MainMenu:
         
         # Clean spacing under the main title
         sub = a.render('small', "— RETRO TACTICAL REMASTER —", RETRO_CREAM)
-        surf.blit(sub, (W // 2 - sub.get_width() // 2, 132))
+        surf.blit(sub, (W // 2 - sub.get_width() // 2, 142))
 
         # Top Right Badges (High Score & Credits - Highly visible and prominent)
         badge_p = Panel(W - 400, 32, 360, 96, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
@@ -255,9 +255,9 @@ class MainMenu:
     def _draw_main(self, surf, a):
         cx = W // 2
         
-        panel_y = 190 if not self._btn_continue else 170
-        panel_h = 425 if not self._btn_continue else 445
-        panel_h = 520 if not self._btn_continue else 540
+        panel_y = 210 if not self._btn_continue else 190
+        
+        panel_h = 540 if not self._btn_continue else 560
         hub_panel = Panel(cx - 410, panel_y, 820, panel_h, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         hub_panel.draw(surf)
 
@@ -271,9 +271,9 @@ class MainMenu:
         self._btn_time_attack.draw(surf)
 
         # Challenge Presets Section Frame with generous breathing room
-        pygame.draw.line(surf, RETRO_MOSS, (cx - 364, 475), (cx + 364, 475), 1)
+        pygame.draw.line(surf, RETRO_MOSS, (cx - 364, 482), (cx + 364, 482), 1)
         mod_label = a.render('small', "CHALLENGE MODIFIER PRESET:", RETRO_CREAM)
-        surf.blit(mod_label, (cx - 364, 485))
+        surf.blit(mod_label, (cx - 364, 495))
 
         self._btn_diff_standard.active   = (self._difficulty == 'standard')
         self._btn_diff_hardcore.active   = (self._difficulty == 'hardcore')
@@ -309,14 +309,14 @@ class MainMenu:
             },
         }
         info = preset_info.get(self._difficulty, preset_info['standard'])
-        info_panel = pygame.Surface((728, 88), pygame.SRCALPHA)
+        info_panel = pygame.Surface((728, 104), pygame.SRCALPHA)
         info_panel.fill((18, 24, 26, 200))
-        pygame.draw.rect(info_panel, (*info['color'], 180), (0, 0, 728, 88), 1, border_radius=6)
+        pygame.draw.rect(info_panel, (*info['color'], 180), (0, 0, 728, 104), 1, border_radius=6)
         t_header = a.render('small', info['title'], info['color'])
         t_body = a.render_wrap('tiny', info['desc'], WHITE, 700)
         info_panel.blit(t_header, (14, 10))
         info_panel.blit(t_body, (14, 38))
-        surf.blit(info_panel, (cx - 364, 595))
+        surf.blit(info_panel, (cx - 364, 605))
 
         # Bottom Command Bar
         bot_panel = Panel(cx - 470, H - 105, 940, 80, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
@@ -403,7 +403,7 @@ class MainMenu:
         cur_cat = PART_CATEGORIES[self._selected_category_index]
         cur_part = cur_cat['parts'][self._selected_part_indices[cur_cat['id']]]
 
-        # Skin Area Card (y = 240..475)
+        # Skin Area Card (y = 240..482)
         skin_card = Panel(cx - 270, 240, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
         skin_card.draw(surf)
         s_title = a.render('medium', f"HULL SKIN: {cur_skin['name'].upper()}", RETRO_AMBER if cur_skin['id'] in self._owned_skins else RETRO_CREAM)
