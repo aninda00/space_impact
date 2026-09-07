@@ -148,9 +148,9 @@ class MainMenu:
     def _build_category_buttons(self):
         self._category_buttons = []
         cx = W // 2
-        start_y = 240
+        start_y = 273  # shifted down ~8px (2mm)
         for i, cat in enumerate(PART_CATEGORIES):
-            btn = Button(cx - 500, start_y + i * 58, 200, 48, cat['name'].upper(), color=RETRO_MOSS, font_key='small')
+            btn = Button(cx - 500, start_y + i * 58, 200, 44, cat['name'].upper(), color=RETRO_MOSS, font_key='small')
             self._category_buttons.append((cat['id'], btn))
 
     def update(self):
@@ -407,11 +407,11 @@ class MainMenu:
     def _draw_shop(self, surf, a, credits):
         cx = W // 2
         # Main Outer Panel for Shipyard
-        p = Panel(cx - 530, 160, 1060, 720, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
+        p = Panel(cx - 530, 200, 1060, 700, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         p.draw(surf)
 
         t = a.render('large', "SPACEPORT SHIPYARD & WEAPON TECH", RETRO_AMBER)
-        surf.blit(t, (cx - 500, 185))
+        surf.blit(t, (cx - 500, 218))
 
         for cat_id, btn in self._category_buttons:
             btn.active = (PART_CATEGORIES[self._selected_category_index]['id'] == cat_id)
@@ -421,14 +421,17 @@ class MainMenu:
         cur_cat = PART_CATEGORIES[self._selected_category_index]
         cur_part = cur_cat['parts'][self._selected_part_indices[cur_cat['id']]]
 
-        # Skin Area Card (y = 240..482)
-        skin_card = Panel(cx - 270, 240, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
+        # Skin Area Card (y = 273..503) - shifted down ~8px
+        skin_card = Panel(cx - 270, 273, 770, 230, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
         skin_card.draw(surf)
         s_title = a.render('medium', f"HULL SKIN: {cur_skin['name'].upper()}", RETRO_AMBER if cur_skin['id'] in self._owned_skins else RETRO_CREAM)
-        surf.blit(s_title, (cx - 250, 255))
+        surf.blit(s_title, (cx - 250, 286))
         s_desc = a.render('small', cur_skin['desc'], GREY)
-        surf.blit(s_desc, (cx - 250, 290))
+        surf.blit(s_desc, (cx - 250, 320))
 
+        self._skin_prev_btn.rect.top = 438
+        self._skin_next_btn.rect.top = 438
+        self._skin_action_btn.rect.top = 438
         self._skin_prev_btn.draw(surf)
         self._skin_next_btn.draw(surf)
         
@@ -446,14 +449,17 @@ class MainMenu:
             self._skin_action_btn.color = RETRO_AMBER
         self._skin_action_btn.draw(surf)
 
-        # Part Area Card (y = 495..730)
-        part_card = Panel(cx - 270, 495, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
+        # Part Area Card (y = 518..753) - shifted down ~8px
+        part_card = Panel(cx - 270, 518, 770, 235, color=(20, 26, 28), border_color=RETRO_MOSS, alpha=225)
         part_card.draw(surf)
         p_title = a.render('medium', f"{cur_cat['name'].upper()}: {cur_part['name'].upper()}", RETRO_AMBER)
-        surf.blit(p_title, (cx - 250, 510))
+        surf.blit(p_title, (cx - 250, 531))
         p_desc = a.render('small', cur_part['desc'], GREY)
-        surf.blit(p_desc, (cx - 250, 545))
+        surf.blit(p_desc, (cx - 250, 565))
 
+        self._part_prev_btn.rect.top = 683
+        self._part_next_btn.rect.top = 683
+        self._part_action_btn.rect.top = 683
         self._part_prev_btn.draw(surf)
         self._part_next_btn.draw(surf)
 
@@ -472,5 +478,5 @@ class MainMenu:
         self._part_action_btn.draw(surf)
 
         # Bottom Return Button
-        self._btn_back.rect.topleft = (cx - 80, 810)
+        self._btn_back.rect.topleft = (cx - 80, 803)
         self._btn_back.draw(surf)
