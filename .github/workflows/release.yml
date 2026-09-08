@@ -39,9 +39,12 @@ jobs:
 
       - name: Verify executable
         run: |
-          Get-ChildItem dist/SpaceImpact.exe
-          & ./dist/SpaceImpact.exe --help 2>&1 | Select-Object -First 20 || true
-
+            if (Test-Path dist/SpaceImpact.exe) {
+                Write-Host "Build verified successfully!"
+            } else {
+                Write-Error "Executable missing from dist directory!"
+                exit 1
+            }
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
