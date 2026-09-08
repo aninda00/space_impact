@@ -209,3 +209,6 @@ class SettingsScreen:
 
         self.reset_btn.draw(surf)
         self.back_btn.draw(surf)
+        
+        dev_credit = a.render('tiny', "DEVELOPED BY ANINDA GHOSH", GREY)
+        surf.blit(dev_credit, (cx + 700, 1050))

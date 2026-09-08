@@ -1,4 +1,4 @@
-name: Create Release
+name: Build & Release Windows Executable
 
 on:
   push:
@@ -8,20 +8,45 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build-and-release:
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pygame pyinstaller
+
       - name: Generate version tag
         id: version
         run: |
-          DATE=$(date -u +'%Y.%m.%d')
-          COUNT=$(git log --oneline --since="$DATE 00:00:00" --until="$DATE 23:59:59" | wc -l)
-          echo "TAG=v${DATE}-${COUNT}" >> $GITHUB_OUTPUT
+          $DATE = Get-Date -Format "yyyy.MM.dd"
+          $COUNT = (git log --oneline --since="$DATE 00:00:00" --until="$DATE 23:59:59" | Measure-Object).Count
+          echo "TAG=v$DATE-$COUNT" >> $env:GITHUB_OUTPUT
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller ^
+            --onefile ^
+            --windowed ^
+            --name "SpaceImpact" ^
+            --clean ^
+            --noconfirm ^
+            main.py
+
+      - name: Verify executable
+        run: |
+          ls -la dist/SpaceImpact.exe
+          ./dist/SpaceImpact.exe --help 2>&1 | head -20 || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -29,10 +54,29 @@ jobs:
           tag_name: ${{ steps.version.outputs.TAG }}
           name: Release ${{ steps.version.outputs.TAG }}
           body: |
-            Automated release created on push to main branch.
+            ## Space Impact — Remastered
             
+            **Automated Windows Build** 🎮
+            
+            **Version:** ${{ steps.version.outputs.TAG }}
             **Commit:** ${{ github.sha }}
-            **Date:** $(date -u)
+            **Date:** ${{ github.event.head_commit.timestamp }}
+            
+            ### Download
+            - **SpaceImpact.exe** — Portable Windows executable (no installation required)
+            
+            ### Features
+            - 13 Sector Campaign with story
+            - Endless Run, Boss Rush, Survival, Time Attack modes
+            - 8 Enemy Types, 13 Unique Bosses
+            - 10 Upgrades, Ship Customization (Skins & Parts)
+            - High Score tracking, Achievements, Codex
+            
+            ### Requirements
+            - Windows 10/11 (64-bit)
+            - No Python or pygame installation needed — fully self-contained!
+          files: |
+            dist/SpaceImpact.exe
           draft: false
           prerelease: false
         env:

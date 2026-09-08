@@ -488,6 +488,7 @@ class MainMenu:
         self._btn_back.rect.topleft = (cx - 80, 803)
         self._btn_back.draw(surf)
 
+
     def _draw_part_icon_preview(self, surf, assets, category, part, cx, base_y):
         """Draw a preview of the part icon on a mini ship silhouette in the shop."""
         icon_type = category.get('icon_type')
@@ -604,7 +605,7 @@ class MainMenu:
     def _draw_skin_preview(self, surf, assets, skin, cx, base_y):
         """Draw a preview of the hull skin on a mini ship silhouette in the shop."""
         colors = skin['colors']
-        preview_x = cx + 250
+        preview_x = cx + 150
         preview_y = base_y + 40
         scale = 2
 
@@ -645,4 +646,4 @@ class MainMenu:
 
         # Label
         label = assets.render('tiny', f"{skin['name'].upper()} HULL PREVIEW", RETRO_AMBER)
-        surf.blit(label, (preview_x + 10, preview_y - 25))
+        surf.blit(label, (preview_x - 10, preview_y - 25))
