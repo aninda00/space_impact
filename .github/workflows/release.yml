@@ -39,8 +39,8 @@ jobs:
 
       - name: Verify executable
         run: |
-          ls -la dist/SpaceImpact.exe
-          ./dist/SpaceImpact.exe --help 2>&1 | head -20 || true
+          Get-ChildItem dist/SpaceImpact.exe
+          & ./dist/SpaceImpact.exe --help 2>&1 | Select-Object -First 20 || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
