@@ -15,8 +15,8 @@ def get_save_path():
         # Running as python script -> save in project root folder
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, "save.json")
-    
-SAVE_FILE = os.path.join(os.path.dirname(__file__), "save.json")
+
+SAVE_FILE = get_save_path()
 SAVE_KEYS = (
     'state', 'game_mode', 'sector', 'wave', 'wave_kills', 'score', 'lives', 'shield',
     'max_shield', 'shoot_rate', 'damage', 'double_shot', 'triple_shot',
