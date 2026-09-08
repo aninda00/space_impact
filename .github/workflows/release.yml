@@ -1,0 +1,39 @@
+name: Create Release
+
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate version tag
+        id: version
+        run: |
+          DATE=$(date -u +'%Y.%m.%d')
+          COUNT=$(git log --oneline --since="$DATE 00:00:00" --until="$DATE 23:59:59" | wc -l)
+          echo "TAG=v${DATE}-${COUNT}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: Release ${{ steps.version.outputs.TAG }}
+          body: |
+            Automated release created on push to main branch.
+            
+            **Commit:** ${{ github.sha }}
+            **Date:** $(date -u)
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
