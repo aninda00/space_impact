@@ -1277,6 +1277,9 @@ class Game:
         AudioEngine().play('click')
         item = SKINS_BY_ID.get(skin_id, {'name': 'Skin'})
         self.hud.show_toast(f"Equipped {item['name']}")
+        # Update active player if exists
+        if hasattr(self, 'player') and self.player:
+            self.player.set_skin(skin_id)
 
     def _buy_part(self, part_id):
         if isinstance(part_id, (tuple, list)):

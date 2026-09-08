@@ -15,7 +15,7 @@ from core.settings import (W, H, TOTAL_SECTORS, BG, BLUE, CYAN, WHITE, GREY,
                             RETRO_AMBER, RETRO_TERRA, RETRO_SAGE, RETRO_CREAM, RETRO_CRIMSON, RETRO_MOSS)
 from core.assets import Assets
 from systems.loadout import (SKINS, PART_CATEGORIES, DEFAULT_EQUIPPED_PARTS,
-                             campaign_power, recommended_power)
+                             campaign_power, recommended_power, ICON_TYPES, PARTS_BY_ID, PART_CATEGORY_BY_ID)
 from systems.story import SECTOR_STORIES
 from ui.components import Button, Panel, draw_text_shadow, draw_glow_rect
 
@@ -148,9 +148,9 @@ class MainMenu:
     def _build_category_buttons(self):
         self._category_buttons = []
         cx = W // 2
-        start_y = 273  # shifted down ~8px (2mm)
+        start_y = 280  # shifted down ~8px (2mm)
         for i, cat in enumerate(PART_CATEGORIES):
-            btn = Button(cx - 500, start_y + i * 58, 200, 44, cat['name'].upper(), color=RETRO_MOSS, font_key='small')
+            btn = Button(cx - 500, start_y + i * 44, 200, 38, cat['name'].upper(), color=RETRO_MOSS, font_key='small')
             self._category_buttons.append((cat['id'], btn))
 
     def update(self):
@@ -244,6 +244,7 @@ class MainMenu:
 
     def draw(self, surf, high_score=0, credits=0):
         a = Assets()
+        a.load()
 
         # Warm Retro Header Logo with generous spacing
         t_glow = a.render_glow('title', "SPACE IMPACT", RETRO_AMBER, glow_color=RETRO_TERRA, glow_radius=3)
@@ -429,6 +430,9 @@ class MainMenu:
         s_desc = a.render('small', cur_skin['desc'], GREY)
         surf.blit(s_desc, (cx - 250, 320))
 
+        # Draw hull skin preview in the shop
+        self._draw_skin_preview(surf, a, cur_skin, cx, 273)
+
         self._skin_prev_btn.rect.top = 438
         self._skin_next_btn.rect.top = 438
         self._skin_action_btn.rect.top = 438
@@ -457,6 +461,9 @@ class MainMenu:
         p_desc = a.render('small', cur_part['desc'], GREY)
         surf.blit(p_desc, (cx - 250, 565))
 
+        # Draw part icon preview in the shop
+        self._draw_part_icon_preview(surf, a, cur_cat, cur_part, cx, 531)
+
         self._part_prev_btn.rect.top = 683
         self._part_next_btn.rect.top = 683
         self._part_action_btn.rect.top = 683
@@ -480,3 +487,162 @@ class MainMenu:
         # Bottom Return Button
         self._btn_back.rect.topleft = (cx - 80, 803)
         self._btn_back.draw(surf)
+
+    def _draw_part_icon_preview(self, surf, assets, category, part, cx, base_y):
+        """Draw a preview of the part icon on a mini ship silhouette in the shop."""
+        icon_type = category.get('icon_type')
+        tier = part.get('icon_tier', 0)
+        if not icon_type or tier <= 0:
+            return
+
+        # Colors for tier display
+        tier_colors = {
+            1: (180, 130, 50),   # Bronze
+            2: (190, 190, 210),  # Silver
+            3: (255, 215, 60),   # Gold
+        }
+        tier_glow = {
+            1: (200, 150, 70),
+            2: (220, 220, 240),
+            3: (255, 235, 100),
+        }
+        tc = tier_colors.get(tier, (255, 255, 255))
+        tg = tier_glow.get(tier, (255, 255, 255))
+
+        # Draw a mini ship silhouette with the icon
+        preview_x = cx + 250
+        preview_y = base_y + 40
+        scale = 2
+
+        # Mini ship body
+        body_color = (60, 80, 100)
+        wing_color = (50, 70, 90)
+        nose_color = (70, 90, 120)
+
+        pygame.draw.polygon(surf, body_color, [
+            (preview_x + int(10*scale), preview_y + int(20*scale)),
+            (preview_x + int(85*scale), preview_y + int(22*scale)),
+            (preview_x + int(105*scale), preview_y + int(27*scale)),
+            (preview_x + int(85*scale), preview_y + int(32*scale)),
+            (preview_x + int(10*scale), preview_y + int(34*scale))
+        ])
+        pygame.draw.polygon(surf, nose_color, [
+            (preview_x + int(85*scale), preview_y + int(22*scale)),
+            (preview_x + int(110*scale), preview_y + int(27*scale)),
+            (preview_x + int(85*scale), preview_y + int(32*scale))
+        ])
+        pygame.draw.polygon(surf, wing_color, [
+            (preview_x + int(20*scale), preview_y + int(20*scale)),
+            (preview_x + int(55*scale), preview_y + int(20*scale)),
+            (preview_x + int(50*scale), preview_y + int(2*scale)),
+            (preview_x + int(30*scale), preview_y + int(2*scale))
+        ])
+        pygame.draw.polygon(surf, wing_color, [
+            (preview_x + int(20*scale), preview_y + int(34*scale)),
+            (preview_x + int(55*scale), preview_y + int(34*scale)),
+            (preview_x + int(50*scale), preview_y + int(52*scale)),
+            (preview_x + int(30*scale), preview_y + int(52*scale))
+        ])
+
+        # Draw the icon on the mini ship (simplified version)
+        if icon_type == 'cannon':
+            barrel_lengths = {1: 8, 2: 12, 3: 16}
+            barrel_count = {1: 1, 2: 2, 3: 3}
+            length = int(barrel_lengths.get(tier, 8) * scale)
+            count = barrel_count.get(tier, 1)
+            for i in range(count):
+                offset_y = int((i - (count - 1) / 2) * 4 * scale)
+                pygame.draw.rect(surf, tc, (preview_x + int(95*scale), preview_y + int(29*scale) + offset_y - 5, length, max(1, int(2*scale))), border_radius=1)
+        elif icon_type == 'core':
+            radius = int({1: 1, 2: 2, 3: 3}.get(tier, 6) * scale)
+            pygame.draw.circle(surf, tg, (preview_x + int(55*scale) + 60, preview_y + int(27*scale)), radius + 2)
+            pygame.draw.circle(surf, tc, (preview_x + int(55*scale) + 60, preview_y + int(27*scale)), radius)
+        elif icon_type == 'shield':
+            pygame.draw.arc(surf, tg, (preview_x + int(48*scale), preview_y + int(0*scale), int(16*scale), int(16*scale)), -0.8, 0.8, max(1, int(2*scale)))
+            pygame.draw.arc(surf, tg, (preview_x + int(48*scale), preview_y + int(39*scale), int(16*scale), int(16*scale)), -0.8, 0.8, max(1, int(2*scale)))
+            if tier >= 2:
+                pygame.draw.arc(surf, tc, (preview_x + int(46*scale), preview_y + int(-2*scale), int(20*scale), int(20*scale)), -0.8, 0.8, max(1, int(2*scale)))
+                pygame.draw.arc(surf, tc, (preview_x + int(46*scale), preview_y + int(37*scale), int(20*scale), int(20*scale)), -0.8, 0.8, max(1, int(2*scale)))
+        elif icon_type == 'sensor':
+            pygame.draw.polygon(surf, tc, [(preview_x + int(98*scale), preview_y + int(27*scale)), (preview_x + int(106*scale), preview_y + int(22*scale)), (preview_x + int(106*scale), preview_y + int(32*scale))])
+            if tier >= 2:
+                pygame.draw.line(surf, tg, (preview_x + int(95*scale), preview_y + int(22*scale)), (preview_x + int(95*scale), preview_y + int(32*scale)), max(1, int(2*scale)))
+        elif icon_type == 'thruster':
+            nozzle_count = {1: 1, 2: 2, 3: 3}
+            count = nozzle_count.get(tier, 1)
+            for i in range(count):
+                offset_y = int((i - (count - 1) / 2) * 6 * scale)
+                pygame.draw.ellipse(surf, tg, (preview_x + int(-4*scale), preview_y + int(28*scale) + offset_y - int(3*scale), int(8*scale), int(6*scale)))
+                pygame.draw.ellipse(surf, tc, (preview_x + int(-2*scale), preview_y + int(28*scale) + offset_y - int(2*scale), int(4*scale), int(4*scale)))
+        elif icon_type == 'armor':
+            plate_heights = {1: 8, 2: 14, 3: 20}
+            h = int(plate_heights.get(tier, 8) * scale)
+            pygame.draw.rect(surf, tc, (preview_x + int(10*scale), preview_y + int(28*scale) - h // 2, int(6*scale), h), border_radius=2)
+            pygame.draw.rect(surf, tc, (preview_x + int(94*scale), preview_y + int(28*scale) - h // 2, int(6*scale), h), border_radius=2)
+        elif icon_type == 'missile':
+            pod_x = int(58 * scale)
+            pygame.draw.rect(surf, tc, (preview_x + pod_x, preview_y + int(8*scale), int(14*scale), int(10*scale)), border_radius=3)
+            pygame.draw.rect(surf, tc, (preview_x + pod_x, preview_y + int(37*scale), int(14*scale), int(10*scale)), border_radius=3)
+        elif icon_type == 'reactor':
+            pygame.draw.ellipse(surf, tg, (preview_x + int(22*scale), preview_y + int(25*scale), int(10*scale), int(5*scale)))
+            pygame.draw.ellipse(surf, tc, (preview_x + int(24*scale), preview_y + int(27*scale), int(7*scale), int(2*scale)))
+        elif icon_type == 'cooling':
+            vent_count = {1: 1, 2: 2, 3: 3}
+            count = vent_count.get(tier, 2)
+            for i in range(count):
+                x = int(30*scale) + i * int(4*scale)
+                pygame.draw.rect(surf, tc, (preview_x + x, preview_y + int(8*scale), int(8*scale), int(4*scale)), border_radius=1)
+        elif icon_type == 'wing':
+            ext = int({1: 6, 2: 12, 3: 18}.get(tier, 6) * scale)
+            pygame.draw.polygon(surf, tc, [(preview_x + int(20*scale), preview_y + int(2*scale)), (preview_x + int(50*scale) + ext, preview_y + int(-3*scale)), (preview_x + int(35*scale) + ext, preview_y + int(4*scale)), (preview_x + int(35*scale), preview_y + int(2*scale))])
+            pygame.draw.polygon(surf, tc, [(preview_x + int(20*scale), preview_y + int(52*scale)), (preview_x + int(50*scale) + ext, preview_y + int(56*scale)), (preview_x + int(35*scale) + ext, preview_y + int(48*scale)), (preview_x + int(35*scale), preview_y + int(52*scale))])
+
+        # Label
+        label = assets.render('tiny', f"TIER {tier} ICON PREVIEW", tg)
+        surf.blit(label, (preview_x + 10, preview_y - 25))
+
+    def _draw_skin_preview(self, surf, assets, skin, cx, base_y):
+        """Draw a preview of the hull skin on a mini ship silhouette in the shop."""
+        colors = skin['colors']
+        preview_x = cx + 250
+        preview_y = base_y + 40
+        scale = 2
+
+        # Mini ship body with skin colors
+        pygame.draw.polygon(surf, colors['body'], [
+            (preview_x + int(10*scale), preview_y + int(20*scale)),
+            (preview_x + int(85*scale), preview_y + int(22*scale)),
+            (preview_x + int(105*scale), preview_y + int(27*scale)),
+            (preview_x + int(85*scale), preview_y + int(32*scale)),
+            (preview_x + int(10*scale), preview_y + int(34*scale))
+        ])
+        # Nose
+        pygame.draw.polygon(surf, colors['nose'], [
+            (preview_x + int(85*scale), preview_y + int(22*scale)),
+            (preview_x + int(110*scale), preview_y + int(27*scale)),
+            (preview_x + int(85*scale), preview_y + int(32*scale))
+        ])
+        # Top wing
+        pygame.draw.polygon(surf, colors['wing'], [
+            (preview_x + int(20*scale), preview_y + int(20*scale)),
+            (preview_x + int(55*scale), preview_y + int(20*scale)),
+            (preview_x + int(50*scale), preview_y + int(2*scale)),
+            (preview_x + int(30*scale), preview_y + int(2*scale))
+        ])
+        # Bottom wing
+        pygame.draw.polygon(surf, colors['wing'], [
+            (preview_x + int(20*scale), preview_y + int(34*scale)),
+            (preview_x + int(55*scale), preview_y + int(34*scale)),
+            (preview_x + int(50*scale), preview_y + int(52*scale)),
+            (preview_x + int(30*scale), preview_y + int(52*scale))
+        ])
+        # Cockpit dome
+        pygame.draw.ellipse(surf, (20, 30, 80), (preview_x + int(38*scale), preview_y + int(18*scale), int(32*scale), int(18*scale)))
+        pygame.draw.ellipse(surf, colors['glass'], (preview_x + int(40*scale), preview_y + int(19*scale), int(28*scale), int(15*scale)))
+        # Engine glow
+        pygame.draw.rect(surf, colors['engine'], (preview_x + int(0*scale), preview_y + int(23*scale), int(14*scale), int(8*scale)), border_radius=3)
+        pygame.draw.rect(surf, colors['flare'], (preview_x + int(2*scale), preview_y + int(25*scale), int(10*scale), int(4*scale)), border_radius=2)
+
+        # Label
+        label = assets.render('tiny', f"{skin['name'].upper()} HULL PREVIEW", RETRO_AMBER)
+        surf.blit(label, (preview_x + 10, preview_y - 25))

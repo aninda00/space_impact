@@ -7,7 +7,7 @@ from core.settings import (W, H, P_LIVES, P_MAX_SHIELD, P_SHIELD_REGEN,
                             ORANGE, WHITE, RED, PURPLE)
 from entities.bullet import PlayerBullet, Missile
 from entities.effects import ThrusterParticle, SmokeParticle, SparkParticle
-from systems.loadout import SKINS_BY_ID, PARTS_BY_ID
+from systems.loadout import SKINS_BY_ID, PARTS_BY_ID, PART_CATEGORY_BY_ID, ICON_TYPES
 
 
 class Player(pygame.sprite.Sprite):
@@ -74,6 +74,10 @@ class Player(pygame.sprite.Sprite):
         # Engine glow
         pygame.draw.rect(self.image, colors['engine'], (0, 23, 14, 8), border_radius=3)
         pygame.draw.rect(self.image, colors['flare'], (2, 25, 10, 4), border_radius=2)
+        
+        # Draw equipped part icons
+        self._draw_part_icons(colors)
+        
         self.base_image = self.image.copy()
         self.mini_image = pygame.transform.scale(self.image, (55, 27))
 
@@ -110,6 +114,131 @@ class Player(pygame.sprite.Sprite):
             self.triple_shot = True
         if stats.get('piercing'):
             self.piercing = True
+
+    def _draw_part_icons(self, colors):
+        """Draw visual icons for equipped parts on the ship sprite."""
+        for part_id in self.part_ids:
+            if part_id not in PARTS_BY_ID:
+                continue
+            part = PARTS_BY_ID[part_id]
+            category_id = part.get('category_id')
+            if not category_id or category_id not in PART_CATEGORY_BY_ID:
+                continue
+            category = PART_CATEGORY_BY_ID[category_id]
+            icon_type = category.get('icon_type')
+            tier = part.get('icon_tier', 0)
+            if icon_type and tier > 0:
+                self._draw_icon(icon_type, tier, colors)
+
+    def _draw_icon(self, icon_type, tier, colors):
+        """Draw a specific icon type at the appropriate position on the ship."""
+        # Tier colors: 1=Bronze, 2=Silver, 3=Gold
+        tier_colors = {
+            1: (180, 130, 50),   # Bronze
+            2: (190, 190, 210),  # Silver
+            3: (255, 215, 60),   # Gold
+        }
+        tier_glow = {
+            1: (200, 150, 70),
+            2: (220, 220, 240),
+            3: (255, 235, 100),
+        }
+        tc = tier_colors.get(tier, (255, 255, 255))
+        tg = tier_glow.get(tier, (255, 255, 255))
+
+        if icon_type == 'cannon':
+            # Front-mounted cannon barrels on the nose
+            barrel_lengths = {1: 8, 2: 12, 3: 16}
+            barrel_count = {1: 1, 2: 2, 3: 3}
+            length = barrel_lengths.get(tier, 8)
+            count = barrel_count.get(tier, 1)
+            for i in range(count):
+                offset_y = (i - (count - 1) / 2) * 4
+                pygame.draw.rect(self.image, tc, (95, 27 + offset_y - 1, length, 2), border_radius=1)
+                pygame.draw.rect(self.image, tg, (96, 27 + offset_y - 1, length - 2, 2), border_radius=1)
+        elif icon_type == 'core':
+            # Center body core glow
+            radius = {1: 6, 2: 9, 3: 12}
+            r = radius.get(tier, 6)
+            pygame.draw.circle(self.image, tg, (55, 27), r + 2)
+            pygame.draw.circle(self.image, tc, (55, 27), r)
+            pygame.draw.circle(self.image, tg, (55, 27), max(1, r - 2))
+        elif icon_type == 'shield':
+            # Shield emitters on wing tips
+            pygame.draw.arc(self.image, tg, (48, 0, 16, 16), -0.8, 0.8, 2)
+            pygame.draw.arc(self.image, tg, (48, 39, 16, 16), -0.8, 0.8, 2)
+            if tier >= 2:
+                pygame.draw.arc(self.image, tc, (46, -2, 20, 20), -0.8, 0.8, 2)
+                pygame.draw.arc(self.image, tc, (46, 37, 20, 20), -0.8, 0.8, 2)
+            if tier >= 3:
+                pygame.draw.arc(self.image, tg, (44, -4, 24, 24), -0.8, 0.8, 2)
+                pygame.draw.arc(self.image, tg, (44, 35, 24, 24), -0.8, 0.8, 2)
+        elif icon_type == 'sensor':
+            # Sensor array on nose/top
+            pygame.draw.polygon(self.image, tc, [(98, 27), (106, 22), (106, 32)])
+            pygame.draw.polygon(self.image, tg, [(99, 27), (105, 23), (105, 31)])
+            if tier >= 2:
+                pygame.draw.line(self.image, tg, (95, 22), (95, 32), 2)
+            if tier >= 3:
+                pygame.draw.line(self.image, tc, (93, 20), (93, 34), 2)
+        elif icon_type == 'thruster':
+            # Enhanced engine nozzles at rear
+            nozzle_count = {1: 1, 2: 2, 3: 3}
+            count = nozzle_count.get(tier, 1)
+            for i in range(count):
+                offset_y = (i - (count - 1) / 2) * 6
+                pygame.draw.ellipse(self.image, tg, (-4, 23 + offset_y - 3, 8, 6))
+                pygame.draw.ellipse(self.image, tc, (-2, 23 + offset_y - 2, 4, 4))
+        elif icon_type == 'armor':
+            # Armor plates on body sides
+            plate_heights = {1: 8, 2: 14, 3: 20}
+            h = plate_heights.get(tier, 8)
+            # Left side
+            pygame.draw.rect(self.image, tc, (10, 27 - h // 2, 6, h), border_radius=2)
+            pygame.draw.rect(self.image, tg, (11, 27 - h // 2 + 1, 4, h - 2), border_radius=1)
+            # Right side
+            pygame.draw.rect(self.image, tc, (94, 27 - h // 2, 6, h), border_radius=2)
+            pygame.draw.rect(self.image, tg, (95, 27 - h // 2 + 1, 4, h - 2), border_radius=1)
+        elif icon_type == 'missile':
+            # Missile pods on wing roots
+            pod_x_top, pod_x_bot = 58, 58
+            pygame.draw.rect(self.image, tc, (pod_x_top, 8, 14, 10), border_radius=3)
+            pygame.draw.rect(self.image, tg, (pod_x_top + 2, 10, 10, 6), border_radius=2)
+            pygame.draw.rect(self.image, tc, (pod_x_bot, 37, 14, 10), border_radius=3)
+            pygame.draw.rect(self.image, tg, (pod_x_bot + 2, 39, 10, 6), border_radius=2)
+            if tier >= 2:
+                pygame.draw.rect(self.image, tg, (pod_x_top - 2, 6, 2, 14), border_radius=1)
+                pygame.draw.rect(self.image, tg, (pod_x_bot - 2, 35, 2, 14), border_radius=1)
+            if tier >= 3:
+                pygame.draw.rect(self.image, tc, (pod_x_top - 4, 5, 2, 16), border_radius=1)
+                pygame.draw.rect(self.image, tc, (pod_x_bot - 4, 34, 2, 16), border_radius=1)
+        elif icon_type == 'reactor':
+            # Reactor core on lower body
+            pygame.draw.ellipse(self.image, tg, (40, 34, 30, 14))
+            pygame.draw.ellipse(self.image, tc, (42, 35, 26, 12))
+            pygame.draw.ellipse(self.image, tg, (46, 36, 18, 10))
+            if tier >= 2:
+                pygame.draw.rect(self.image, tg, (38, 40, 34, 4), border_radius=2)
+            if tier >= 3:
+                pygame.draw.rect(self.image, tc, (36, 44, 38, 4), border_radius=2)
+        elif icon_type == 'cooling':
+            # Cooling vents on upper body
+            vent_count = {1: 2, 2: 3, 3: 4}
+            count = vent_count.get(tier, 2)
+            for i in range(count):
+                x = 30 + i * 12
+                pygame.draw.rect(self.image, tc, (x, 8, 8, 4), border_radius=1)
+                pygame.draw.rect(self.image, tg, (x + 1, 9, 6, 2), border_radius=1)
+        elif icon_type == 'wing':
+            # Wing tip extensions
+            ext_length = {1: 6, 2: 12, 3: 18}
+            ext = ext_length.get(tier, 6)
+            # Top wing tip
+            pygame.draw.polygon(self.image, tc, [(50, 2), (50 + ext, -2), (55 + ext, 4), (55, 2)])
+            pygame.draw.polygon(self.image, tg, [(51, 2), (50 + ext, 0), (54 + ext, 3), (54, 2)])
+            # Bottom wing tip
+            pygame.draw.polygon(self.image, tc, [(50, 52), (50 + ext, 54), (55 + ext, 48), (55, 52)])
+            pygame.draw.polygon(self.image, tg, [(51, 52), (50 + ext, 52), (54 + ext, 49), (54, 52)])
 
     def handle_scroll(self, dy):
         """dy: -1 scroll up, +1 scroll down"""

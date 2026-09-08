@@ -57,105 +57,130 @@ SKINS = [
     },
 ]
 
+# Icon type definitions for visual attachments on the ship
+ICON_TYPES = {
+    'laser_cannon': 'cannon',       # Front-mounted cannon barrels
+    'plasma_core': 'core',          # Center body glow/core
+    'shield_generator': 'shield',   # Shield emitter on wings
+    'targeting_array': 'sensor',    # Sensor array on nose
+    'thrusters': 'thruster',        # Rear engine nozzles
+    'armor_plating': 'armor',       # Armor plates on body
+    'missile_rack': 'missile',      # Missile pods on wings
+    'reactor': 'reactor',           # Reactor core on body
+    'cooling_system': 'cooling',    # Cooling vents on body
+    'wing_frame': 'wing',           # Wing extensions/tips
+}
+
+
 PART_CATEGORIES = [
     {
         'id': 'laser_cannon',
         'name': 'Laser Cannon',
+        'icon_type': 'cannon',
         'parts': [
-            {'id': 'laser_cannon_stock', 'name': 'Stock Laser', 'cost': 0, 'desc': 'Standard issue forward cannon.', 'stats': {}},
-            {'id': 'laser_cannon_mk2', 'name': 'Laser Cannon Mk II', 'cost': 220, 'desc': 'Sharper beams and tighter damage falloff.', 'stats': {'damage_bonus': 4}},
-            {'id': 'laser_cannon_mk3', 'name': 'Laser Cannon Mk III', 'cost': 420, 'desc': 'Military focusing coils with twin barrels.', 'stats': {'damage_bonus': 8, 'double_shot': True}},
-            {'id': 'laser_cannon_mk4', 'name': 'Nova Laser Cannon', 'cost': 720, 'desc': 'Triple-beam cannon built for late-sector armor.', 'stats': {'damage_bonus': 13, 'triple_shot': True}},
+            {'id': 'laser_cannon_stock', 'name': 'Stock Laser', 'cost': 0, 'desc': 'Standard issue forward cannon.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'laser_cannon_mk2', 'name': 'Laser Cannon Mk II', 'cost': 220, 'desc': 'Sharper beams and tighter damage falloff.', 'stats': {'damage_bonus': 4}, 'icon_tier': 1},
+            {'id': 'laser_cannon_mk3', 'name': 'Laser Cannon Mk III', 'cost': 420, 'desc': 'Military focusing coils with twin barrels.', 'stats': {'damage_bonus': 8, 'double_shot': True}, 'icon_tier': 2},
+            {'id': 'laser_cannon_mk4', 'name': 'Nova Laser Cannon', 'cost': 720, 'desc': 'Triple-beam cannon built for late-sector armor.', 'stats': {'damage_bonus': 13, 'triple_shot': True}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'plasma_core',
         'name': 'Plasma Core',
+        'icon_type': 'core',
         'parts': [
-            {'id': 'plasma_core_stock', 'name': 'Stock Core', 'cost': 0, 'desc': 'Stable output with no bonus.', 'stats': {}},
-            {'id': 'plasma_core_overdrive', 'name': 'Overdrive Core', 'cost': 260, 'desc': 'Feeds your weapons faster between volleys.', 'stats': {'shoot_rate_delta': -2}},
-            {'id': 'plasma_core_surge', 'name': 'Surge Core', 'cost': 500, 'desc': 'Pushes more charge through every firing cycle.', 'stats': {'shoot_rate_delta': -3, 'damage_bonus': 2}},
-            {'id': 'plasma_core_starfire', 'name': 'Starfire Core', 'cost': 820, 'desc': 'Combat reactor tuning for constant pressure.', 'stats': {'shoot_rate_delta': -4, 'damage_bonus': 4}},
+            {'id': 'plasma_core_stock', 'name': 'Stock Core', 'cost': 0, 'desc': 'Stable output with no bonus.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'plasma_core_overdrive', 'name': 'Overdrive Core', 'cost': 260, 'desc': 'Feeds your weapons faster between volleys.', 'stats': {'shoot_rate_delta': -2}, 'icon_tier': 1},
+            {'id': 'plasma_core_surge', 'name': 'Surge Core', 'cost': 500, 'desc': 'Pushes more charge through every firing cycle.', 'stats': {'shoot_rate_delta': -3, 'damage_bonus': 2}, 'icon_tier': 2},
+            {'id': 'plasma_core_starfire', 'name': 'Starfire Core', 'cost': 820, 'desc': 'Combat reactor tuning for constant pressure.', 'stats': {'shoot_rate_delta': -4, 'damage_bonus': 4}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'shield_generator',
         'name': 'Shield Generator',
+        'icon_type': 'shield',
         'parts': [
-            {'id': 'shield_generator_stock', 'name': 'Stock Generator', 'cost': 0, 'desc': 'Basic defensive shell.', 'stats': {}},
-            {'id': 'shield_generator_aegis', 'name': 'Aegis Generator', 'cost': 260, 'desc': 'More shield capacity for campaign bosses.', 'stats': {'shield_bonus': 35}},
-            {'id': 'shield_generator_bastion', 'name': 'Bastion Generator', 'cost': 520, 'desc': 'Thicker shields with a steadier recharge curve.', 'stats': {'shield_bonus': 65, 'regen_bonus': 0.02}},
-            {'id': 'shield_generator_citadel', 'name': 'Citadel Generator', 'cost': 840, 'desc': 'Heavy defensive matrix for brutal sectors.', 'stats': {'shield_bonus': 105, 'regen_bonus': 0.04}},
+            {'id': 'shield_generator_stock', 'name': 'Stock Generator', 'cost': 0, 'desc': 'Basic defensive shell.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'shield_generator_aegis', 'name': 'Aegis Generator', 'cost': 260, 'desc': 'More shield capacity for campaign bosses.', 'stats': {'shield_bonus': 35}, 'icon_tier': 1},
+            {'id': 'shield_generator_bastion', 'name': 'Bastion Generator', 'cost': 520, 'desc': 'Thicker shields with a steadier recharge curve.', 'stats': {'shield_bonus': 65, 'regen_bonus': 0.02}, 'icon_tier': 2},
+            {'id': 'shield_generator_citadel', 'name': 'Citadel Generator', 'cost': 840, 'desc': 'Heavy defensive matrix for brutal sectors.', 'stats': {'shield_bonus': 105, 'regen_bonus': 0.04}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'targeting_array',
         'name': 'Targeting Array',
+        'icon_type': 'sensor',
         'parts': [
-            {'id': 'targeting_array_stock', 'name': 'Stock Array', 'cost': 0, 'desc': 'Manual lock and standard tracking.', 'stats': {}},
-            {'id': 'targeting_array_hawk', 'name': 'Hawk Array', 'cost': 210, 'desc': 'Improves shot focus and impact.', 'stats': {'damage_bonus': 3}},
-            {'id': 'targeting_array_viper', 'name': 'Viper Array', 'cost': 430, 'desc': 'Predictive targeting for faster wave clears.', 'stats': {'damage_bonus': 5, 'shoot_rate_delta': -1}},
-            {'id': 'targeting_array_oracle', 'name': 'Oracle Array', 'cost': 760, 'desc': 'Elite fire-control package for boss armor.', 'stats': {'damage_bonus': 8, 'shoot_rate_delta': -2, 'piercing': True}},
+            {'id': 'targeting_array_stock', 'name': 'Stock Array', 'cost': 0, 'desc': 'Manual lock and standard tracking.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'targeting_array_hawk', 'name': 'Hawk Array', 'cost': 210, 'desc': 'Improves shot focus and impact.', 'stats': {'damage_bonus': 3}, 'icon_tier': 1},
+            {'id': 'targeting_array_viper', 'name': 'Viper Array', 'cost': 430, 'desc': 'Predictive targeting for faster wave clears.', 'stats': {'damage_bonus': 5, 'shoot_rate_delta': -1}, 'icon_tier': 2},
+            {'id': 'targeting_array_oracle', 'name': 'Oracle Array', 'cost': 760, 'desc': 'Elite fire-control package for boss armor.', 'stats': {'damage_bonus': 8, 'shoot_rate_delta': -2, 'piercing': True}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'thrusters',
         'name': 'Thrusters',
+        'icon_type': 'thruster',
         'parts': [
-            {'id': 'thrusters_stock', 'name': 'Stock Thrusters', 'cost': 0, 'desc': 'Standard movement package.', 'stats': {}},
-            {'id': 'thrusters_vector', 'name': 'Vector Thrusters', 'cost': 230, 'desc': 'Adds more speed for dodging lanes.', 'stats': {'speed_bonus': 5}},
-            {'id': 'thrusters_comet', 'name': 'Comet Thrusters', 'cost': 440, 'desc': 'Stronger vertical response under pressure.', 'stats': {'speed_bonus': 8, 'regen_bonus': 0.01}},
-            {'id': 'thrusters_flux', 'name': 'Flux Thrusters', 'cost': 720, 'desc': 'Fast recovery package for dense bullet patterns.', 'stats': {'speed_bonus': 12, 'regen_bonus': 0.02}},
+            {'id': 'thrusters_stock', 'name': 'Stock Thrusters', 'cost': 0, 'desc': 'Standard movement package.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'thrusters_vector', 'name': 'Vector Thrusters', 'cost': 230, 'desc': 'Adds more speed for dodging lanes.', 'stats': {'speed_bonus': 5}, 'icon_tier': 1},
+            {'id': 'thrusters_comet', 'name': 'Comet Thrusters', 'cost': 440, 'desc': 'Stronger vertical response under pressure.', 'stats': {'speed_bonus': 8, 'regen_bonus': 0.01}, 'icon_tier': 2},
+            {'id': 'thrusters_flux', 'name': 'Flux Thrusters', 'cost': 720, 'desc': 'Fast recovery package for dense bullet patterns.', 'stats': {'speed_bonus': 12, 'regen_bonus': 0.02}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'armor_plating',
         'name': 'Armor Plating',
+        'icon_type': 'armor',
         'parts': [
-            {'id': 'armor_plating_stock', 'name': 'Stock Plating', 'cost': 0, 'desc': 'No extra reinforcement.', 'stats': {}},
-            {'id': 'armor_plating_titan', 'name': 'Titan Plating', 'cost': 300, 'desc': 'Thickens the frame and boosts shield reserve.', 'stats': {'shield_bonus': 25, 'regen_bonus': 0.01}},
-            {'id': 'armor_plating_guardian', 'name': 'Guardian Plating', 'cost': 560, 'desc': 'Layered armor that keeps shields stable.', 'stats': {'shield_bonus': 55, 'regen_bonus': 0.025}},
-            {'id': 'armor_plating_colossus', 'name': 'Colossus Plating', 'cost': 880, 'desc': 'Late-sector armor built to absorb mistakes.', 'stats': {'shield_bonus': 90, 'regen_bonus': 0.04}},
+            {'id': 'armor_plating_stock', 'name': 'Stock Plating', 'cost': 0, 'desc': 'No extra reinforcement.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'armor_plating_titan', 'name': 'Titan Plating', 'cost': 300, 'desc': 'Thickens the frame and boosts shield reserve.', 'stats': {'shield_bonus': 25, 'regen_bonus': 0.01}, 'icon_tier': 1},
+            {'id': 'armor_plating_guardian', 'name': 'Guardian Plating', 'cost': 560, 'desc': 'Layered armor that keeps shields stable.', 'stats': {'shield_bonus': 55, 'regen_bonus': 0.025}, 'icon_tier': 2},
+            {'id': 'armor_plating_colossus', 'name': 'Colossus Plating', 'cost': 880, 'desc': 'Late-sector armor built to absorb mistakes.', 'stats': {'shield_bonus': 90, 'regen_bonus': 0.04}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'missile_rack',
         'name': 'Missile Rack',
+        'icon_type': 'missile',
         'parts': [
-            {'id': 'missile_rack_stock', 'name': 'Empty Rack', 'cost': 0, 'desc': 'No support ordnance.', 'stats': {}},
-            {'id': 'missile_rack_seeker', 'name': 'Seeker Rack', 'cost': 420, 'desc': 'Campaign runs start with homing missiles online.', 'stats': {'missile': True, 'missile_interval': 4}},
-            {'id': 'missile_rack_hunter', 'name': 'Hunter Rack', 'cost': 700, 'desc': 'More frequent missile support against elites.', 'stats': {'missile': True, 'missile_interval': 3, 'damage_bonus': 2}},
-            {'id': 'missile_rack_tempest', 'name': 'Tempest Rack', 'cost': 980, 'desc': 'Aggressive missile cadence for boss phases.', 'stats': {'missile': True, 'missile_interval': 2, 'damage_bonus': 3}},
+            {'id': 'missile_rack_stock', 'name': 'Empty Rack', 'cost': 0, 'desc': 'No support ordnance.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'missile_rack_seeker', 'name': 'Seeker Rack', 'cost': 420, 'desc': 'Campaign runs start with homing missiles online.', 'stats': {'missile': True, 'missile_interval': 4}, 'icon_tier': 1},
+            {'id': 'missile_rack_hunter', 'name': 'Hunter Rack', 'cost': 700, 'desc': 'More frequent missile support against elites.', 'stats': {'missile': True, 'missile_interval': 3, 'damage_bonus': 2}, 'icon_tier': 2},
+            {'id': 'missile_rack_tempest', 'name': 'Tempest Rack', 'cost': 980, 'desc': 'Aggressive missile cadence for boss phases.', 'stats': {'missile': True, 'missile_interval': 2, 'damage_bonus': 3}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'reactor',
         'name': 'Reactor',
+        'icon_type': 'reactor',
         'parts': [
-            {'id': 'reactor_stock', 'name': 'Stock Reactor', 'cost': 0, 'desc': 'Safe civilian output levels.', 'stats': {}},
-            {'id': 'reactor_stellar', 'name': 'Stellar Reactor', 'cost': 340, 'desc': 'Feeds both shields and weapon systems.', 'stats': {'damage_bonus': 2, 'shield_bonus': 20}},
-            {'id': 'reactor_pulsar', 'name': 'Pulsar Reactor', 'cost': 620, 'desc': 'Balanced combat output for mid campaign.', 'stats': {'damage_bonus': 4, 'shield_bonus': 35, 'regen_bonus': 0.01}},
-            {'id': 'reactor_quasar', 'name': 'Quasar Reactor', 'cost': 940, 'desc': 'Premium power plant for the final sectors.', 'stats': {'damage_bonus': 6, 'shield_bonus': 55, 'regen_bonus': 0.02}},
+            {'id': 'reactor_stock', 'name': 'Stock Reactor', 'cost': 0, 'desc': 'Safe civilian output levels.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'reactor_stellar', 'name': 'Stellar Reactor', 'cost': 340, 'desc': 'Feeds both shields and weapon systems.', 'stats': {'damage_bonus': 2, 'shield_bonus': 20}, 'icon_tier': 1},
+            {'id': 'reactor_pulsar', 'name': 'Pulsar Reactor', 'cost': 620, 'desc': 'Balanced combat output for mid campaign.', 'stats': {'damage_bonus': 4, 'shield_bonus': 35, 'regen_bonus': 0.01}, 'icon_tier': 2},
+            {'id': 'reactor_quasar', 'name': 'Quasar Reactor', 'cost': 940, 'desc': 'Premium power plant for the final sectors.', 'stats': {'damage_bonus': 6, 'shield_bonus': 55, 'regen_bonus': 0.02}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'cooling_system',
         'name': 'Cooling System',
+        'icon_type': 'cooling',
         'parts': [
-            {'id': 'cooling_system_stock', 'name': 'Stock Cooling', 'cost': 0, 'desc': 'Keeps the ship just stable enough.', 'stats': {}},
-            {'id': 'cooling_system_cryo', 'name': 'Cryo Cooling', 'cost': 240, 'desc': 'Lets the guns cycle harder for longer.', 'stats': {'shoot_rate_delta': -1, 'regen_bonus': 0.02}},
-            {'id': 'cooling_system_frostline', 'name': 'Frostline Cooling', 'cost': 460, 'desc': 'Improves heat control for sustained fire.', 'stats': {'shoot_rate_delta': -2, 'regen_bonus': 0.03}},
-            {'id': 'cooling_system_zero', 'name': 'Zero-Point Cooling', 'cost': 780, 'desc': 'Keeps elite weapon systems from choking.', 'stats': {'shoot_rate_delta': -3, 'regen_bonus': 0.05}},
+            {'id': 'cooling_system_stock', 'name': 'Stock Cooling', 'cost': 0, 'desc': 'Keeps the ship just stable enough.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'cooling_system_cryo', 'name': 'Cryo Cooling', 'cost': 240, 'desc': 'Lets the guns cycle harder for longer.', 'stats': {'shoot_rate_delta': -1, 'regen_bonus': 0.02}, 'icon_tier': 1},
+            {'id': 'cooling_system_frostline', 'name': 'Frostline Cooling', 'cost': 460, 'desc': 'Improves heat control for sustained fire.', 'stats': {'shoot_rate_delta': -2, 'regen_bonus': 0.03}, 'icon_tier': 2},
+            {'id': 'cooling_system_zero', 'name': 'Zero-Point Cooling', 'cost': 780, 'desc': 'Keeps elite weapon systems from choking.', 'stats': {'shoot_rate_delta': -3, 'regen_bonus': 0.05}, 'icon_tier': 3},
         ],
     },
     {
         'id': 'wing_frame',
         'name': 'Wing Frame',
+        'icon_type': 'wing',
         'parts': [
-            {'id': 'wing_frame_stock', 'name': 'Stock Frame', 'cost': 0, 'desc': 'No structural tuning.', 'stats': {}},
-            {'id': 'wing_frame_raptor', 'name': 'Raptor Frame', 'cost': 280, 'desc': 'Lightens the hull and helps your turns recover.', 'stats': {'speed_bonus': 3, 'damage_bonus': 2}},
-            {'id': 'wing_frame_striker', 'name': 'Striker Frame', 'cost': 520, 'desc': 'A responsive frame with better weapon mounts.', 'stats': {'speed_bonus': 6, 'damage_bonus': 4}},
-            {'id': 'wing_frame_valkyrie', 'name': 'Valkyrie Frame', 'cost': 860, 'desc': 'Precision frame for surviving late-sector lanes.', 'stats': {'speed_bonus': 9, 'damage_bonus': 6}},
+            {'id': 'wing_frame_stock', 'name': 'Stock Frame', 'cost': 0, 'desc': 'No structural tuning.', 'stats': {}, 'icon_tier': 0},
+            {'id': 'wing_frame_raptor', 'name': 'Raptor Frame', 'cost': 280, 'desc': 'Lightens the hull and helps your turns recover.', 'stats': {'speed_bonus': 3, 'damage_bonus': 2}, 'icon_tier': 1},
+            {'id': 'wing_frame_striker', 'name': 'Striker Frame', 'cost': 520, 'desc': 'A responsive frame with better weapon mounts.', 'stats': {'speed_bonus': 6, 'damage_bonus': 4}, 'icon_tier': 2},
+            {'id': 'wing_frame_valkyrie', 'name': 'Valkyrie Frame', 'cost': 860, 'desc': 'Precision frame for surviving late-sector lanes.', 'stats': {'speed_bonus': 9, 'damage_bonus': 6}, 'icon_tier': 3},
         ],
     },
 ]
