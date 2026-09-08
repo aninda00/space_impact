@@ -35,13 +35,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller ^
-            --onefile ^
-            --windowed ^
-            --name "SpaceImpact" ^
-            --clean ^
-            --noconfirm ^
-            main.py
+          pyinstaller --onefile --windowed --name "SpaceImpact" --clean --noconfirm main.py
 
       - name: Verify executable
         run: |
