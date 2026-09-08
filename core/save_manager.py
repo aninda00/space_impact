@@ -4,7 +4,18 @@ Extracted from core/game.py to keep the Game class focused on gameplay.
 """
 import json
 import os
+import sys
 
+def get_save_path():
+    """Returns the persistent save path next to the executable or script."""
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller .exe -> save in the same folder as SpaceImpact.exe
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # Running as python script -> save in project root folder
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, "save.json")
+    
 SAVE_FILE = os.path.join(os.path.dirname(__file__), "save.json")
 SAVE_KEYS = (
     'state', 'game_mode', 'sector', 'wave', 'wave_kills', 'score', 'lives', 'shield',
