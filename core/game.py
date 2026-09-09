@@ -13,6 +13,7 @@ from core.assets import Assets
 
 from entities.player   import Player
 from entities.effects  import StarField, Explosion, Particle, ScreenFlash, CameraShake, NebulaBackdrop
+from entities.coin     import CoinManager
 from entities.bullet   import Missile
 
 from systems.wave_manager   import WaveManager
@@ -129,6 +130,7 @@ class Game:
         self.e_bullets    = pygame.sprite.Group()
         self.explosions   = pygame.sprite.Group()
         self.particles    = []     # Particle objects (manual draw)
+        self.coin_manager = CoinManager()
 
         self.all_sprites.add(self.player)
         self._pending_upgrades = []
@@ -524,13 +526,23 @@ class Game:
                     for _ in range(4):
                         self.explosions.add(Explosion(cx + ((_-2)*25), cy, radius=50, color=RED))
                     self.player.score += self._boss_ref2.SCORE // 2
-                    self._award_credits(max(50, self._boss_ref2.SCORE // 40))
+                    # Spawn coins in campaign, survival, time_attack modes only
+                    if self.game_mode in ('campaign', 'survival', 'time_attack'):
+                        self.coin_manager.spawn_coin(cx, cy, self._boss_ref2)
+                    # Endless and boss_rush: no credits awarded
                     from core.audio import AudioEngine
                     AudioEngine().play('boss_explosion')
                     self.camera_shake.trigger(22, 12)
                     self._boss_ref2.kill()
                     self._boss_ref2 = None
                     break
+
+        # Coin collection (campaign, survival, time_attack modes)
+        if self.game_mode in ('campaign', 'survival', 'time_attack'):
+            self.coin_manager.update(self.player)
+            collected = self.coin_manager.check_collection(self.player)
+            if collected > 0:
+                self._award_credits(collected)
 
         if signal == 'upgrade':
             if self.game_mode == 'campaign':
@@ -563,22 +575,20 @@ class Game:
         self.particles.append(p)
         pts = enemy.SCORE
         self.player.score += pts
-        self._award_credits(max(1, pts // 50))
+        # Spawn coins in campaign, survival, time_attack modes only
+        if self.game_mode in ('campaign', 'survival', 'time_attack'):
+            self.coin_manager.spawn_coin(cx, cy, enemy)
+        # Endless and boss_rush: no credits awarded
         from core.audio import AudioEngine
         AudioEngine().play('explosion')
         self.stats.record_enemy_killed()
         enemy_id = getattr(enemy, 'id', 'fighter')
         self._unlock_codex(enemy_id)
-        if hasattr(self, 'achievements_mgr'):
-            self.achievements_mgr.check_game_events(self)
         if self.game_mode == 'time_attack':
             self.wave_mgr.add_time_bonus(30)
         self.hud.add_kill_floater(cx, cy - 20, pts)
         enemy.kill()
 
-    def _on_boss_killed(self):
-        if self._boss_ref:
-            cx, cy = self._boss_ref.rect.center
     def _on_boss_killed(self, boss=None):
         target = boss or self._boss_ref
         if target and target.alive():
@@ -586,24 +596,19 @@ class Game:
             cx, cy = target.rect.center
             for _ in range(6):
                 self.explosions.add(Explosion(cx + ((_-3)*30), cy, radius=60, color=RED))
-            self.player.score += self._boss_ref.SCORE
-            self._award_credits(max(100, self._boss_ref.SCORE // 25))
             score_val = target.SCORE // 2 if is_secondary else target.SCORE
             self.player.score += score_val
-            self._award_credits(max(60, score_val // 30))
+            # Spawn coins in campaign, survival, time_attack modes only
+            if self.game_mode in ('campaign', 'survival', 'time_attack'):
+                self.coin_manager.spawn_coin(cx, cy, target)
+            # Endless and boss_rush: no credits awarded
             from core.audio import AudioEngine
             AudioEngine().play('boss_explosion')
             self.stats.record_boss_killed()
-            boss_id = getattr(self._boss_ref, 'NAME', 'Vanguard').lower().split()[0]
             boss_id = getattr(target, 'NAME', 'Vanguard').lower().split()[0]
             self._unlock_codex(boss_id)
-            if hasattr(self, 'achievements_mgr'):
-                self.achievements_mgr.check_game_events(self)
             if self.game_mode == 'time_attack':
-                self.wave_mgr.add_time_bonus(600)
-            self._boss_ref.kill()
-            self._boss_ref = None
-            self.wave_mgr.add_time_bonus(300 if is_secondary else 600)
+                self.wave_mgr.add_time_bonus(300 if is_secondary else 600)
             target.kill()
             if target is self._boss_ref:
                 self._boss_ref = None
@@ -679,7 +684,6 @@ class Game:
                 self.achievements_mgr.check_and_unlock('sharpshooter', self)
             if self.wave_mgr.sector == 1:
                 self.achievements_mgr.check_and_unlock('campaign_sec1', self)
-            self.achievements_mgr.check_game_events(self)
         self._sector_clear_timer = 0
         self.state = State.SECTOR_CLEAR
 
@@ -771,10 +775,13 @@ class Game:
         # Particles
         for p in self.particles:
             p.draw(self.screen)
+        # Coins (campaign, survival, time_attack modes)
+        if self.game_mode in ('campaign', 'survival', 'time_attack'):
+            self.coin_manager.draw(self.screen)
         # Player
         self.player.draw(self.screen)
         # HUD
-        self.hud.update(self.player.score)
+        self.hud.update(self.player.score, self.credits)
         self.hud.draw(self.screen, self.player, self.wave_mgr)
         if self.wave_mgr.boss_active:
             self.hud.draw_boss_bars(self.screen, self._boss_ref, getattr(self, '_boss_ref2', None))

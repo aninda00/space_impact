@@ -132,11 +132,8 @@ class WaveManager:
             # Wave clear: goal reached AND all remaining enemies dead
             if not self.spawning and len(enemies_group) == 0:
                 if self.mode == 'endless':
-                    if self.wave % 3 == 0:
-                        self.state = 'wave_clear'
-                        return 'upgrade'
-                    self.start_next_wave()
-                    return 'next_wave'
+                    self.state = 'wave_clear'
+                    return 'upgrade'
                 elif self.wave >= WAVES_PER_SECTOR:
                     self.state = 'boss_warning'
                     return 'boss_warning'

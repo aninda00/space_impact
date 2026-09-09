@@ -28,6 +28,9 @@ class HUD:
         self._panel_radar = Panel(W - 490, 16, 340, 84, color=(24, 30, 32), border_color=RETRO_MOSS, alpha=235)
         self._wave_bar    = ProgressBar(W - 470, 68, 300, 14, color=RETRO_SAGE, radius=4)
 
+        # Credits Panel (bottom left)
+        self._panel_credits = Panel(24, H - 84, 200, 68, color=(24, 30, 32), border_color=RETRO_AMBER, alpha=235)
+
         self._floaters    = []   # [(text, x, y, life, max_life, color)]
         self._toast_text  = ''
         self._toast_life  = 0
@@ -42,8 +45,9 @@ class HUD:
         self._toast_life = duration_frames
         self._toast_max  = duration_frames
 
-    def update(self, score=0):
+    def update(self, score=0, credits=0):
         self._pulse_tick += 1
+        self._credits = credits
         self._floaters = [f for f in self._floaters if f[3] > 0]
         for f in self._floaters:
             f[3] -= 1
@@ -112,6 +116,13 @@ class HUD:
         surf.blit(r_val, (W - 170 - r_val.get_width(), 21))
 
         self._wave_bar.draw(surf, wave_mgr.wave_progress())
+
+        # ── Credits Panel (Bottom Left) ────────────────────────────────────
+        self._panel_credits.draw(surf)
+        cr_lbl = a.render('tiny', "CREDITS", RETRO_CREAM)
+        cr_val = a.render('small', f"{self._credits:,} CR", RETRO_AMBER)
+        surf.blit(cr_lbl, (42, H - 76))
+        surf.blit(cr_val, (42, H - 48))
 
         # ── Floating Kill Metrics ──────────────────────────────────────────
         for text, fx, fy, life, max_life, col in self._floaters:
