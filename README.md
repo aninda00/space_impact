@@ -4,10 +4,6 @@ A full-featured Space Impact clone built with Python + pygame.
 
 ## Setup
 
-```bash
-pip install pygame
-python main.py
-```
 
 ## Controls
 
